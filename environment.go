@@ -171,7 +171,7 @@ func (env environment) runCommand(cmd *exec.Cmd, timeout time.Duration) error {
 func (env environment) execGoGet(modulePath, moduleVersion string) error {
 	mod := modulePath + "@" + moduleVersion
 	cmd := env.newCommand("go", "get", "-d", "-v", mod)
-	return env.runCommand(cmd, 30*time.Second)
+	return env.runCommand(cmd, 60*time.Second)
 }
 
 type moduleTemplateContext struct {

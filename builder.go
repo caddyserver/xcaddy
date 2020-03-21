@@ -60,7 +60,7 @@ func Build(caddyVersion string, plugins []CaddyPlugin, outputFile string) error 
 		"-ldflags", "-w -s", // trim debug symbols
 		"-trimpath",
 	)
-	err = env.runCommand(cmd, 1*time.Minute)
+	err = env.runCommand(cmd, 5*time.Minute)
 	if err != nil {
 		return err
 	}
