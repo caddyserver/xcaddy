@@ -23,11 +23,17 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 func newEnvironment(caddyVersion string, plugins []CaddyPlugin) (*environment, error) {
-	caddyModulePath, err := versionedModulePath(defaultCaddyModulePath, caddyVersion)
+	// assume v2 if no semantic version is provided
+	caddyModulePath := defaultCaddyModulePath
+	if !strings.HasPrefix(caddyVersion, "v") || !strings.Contains(caddyVersion, ".") {
+		caddyModulePath += "/v2"
+	}
+	caddyModulePath, err := versionedModulePath(caddyModulePath, caddyVersion)
 	if err != nil {
 		return nil, err
 	}

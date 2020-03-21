@@ -106,7 +106,7 @@ func newTempFolder() (string, error) {
 			return "", err
 		}
 	}
-	ts := time.Now().Format(YearMonthDayHourMin)
+	ts := time.Now().Format(yearMonthDayHourMin)
 	return ioutil.TempDir(parentDir, fmt.Sprintf("buildenv_%s.", ts))
 }
 
@@ -148,16 +148,9 @@ func versionedModulePath(modulePath, moduleVersion string) (string, error) {
 var moduleVersionRegexp = regexp.MustCompile(`.+/v(\d+)$`)
 
 const (
-	// YearMonthDayHourMin is the date format
+	// yearMonthDayHourMin is the date format
 	// used for temporary folder paths.
-	YearMonthDayHourMin = "2006-01-02-1504"
-
-	// // ParallelBuildOps is how many build operations
-	// // to perform in parallel (`go build -p` value)
-	// ParallelBuildOps = 4
-
-	// CaddyRepo is the repository path of the Caddy package.
-	CaddyRepo = "https://github.com/caddyserver/caddy.git"
+	yearMonthDayHourMin = "2006-01-02-1504"
 
 	defaultCaddyModulePath = "github.com/caddyserver/caddy"
 )
