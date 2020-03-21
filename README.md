@@ -16,8 +16,10 @@ Supports Caddy 2 and up.
 ```go
 caddyVersion := "v2.0.0-beta.19"
 plugins := []builder.CaddyPlugin{
-	ModulePath: "github.com/caddyserver/nginx-adapter",
-	Version:    "6c484552e630ccac384d2d9c43c9d14c4e8d2e56",
+	builder.CaddyPlugin{
+		ModulePath: "github.com/caddyserver/nginx-adapter",
+		Version:    "6c484552e630ccac384d2d9c43c9d14c4e8d2e56",
+	},
 }
 output := "./caddy"
 
