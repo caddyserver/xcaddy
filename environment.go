@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-func newEnvironment(caddyVersion string, plugins []CaddyPlugin) (*environment, error) {
+func newEnvironment(caddyVersion string, plugins []Dependency) (*environment, error) {
 	// assume v2 if no semantic version is provided
 	caddyModulePath := defaultCaddyModulePath
 	if !strings.HasPrefix(caddyVersion, "v") || !strings.Contains(caddyVersion, ".") {
@@ -103,6 +103,19 @@ func newEnvironment(caddyVersion string, plugins []CaddyPlugin) (*environment, e
 		return nil, err
 	}
 
+	// specify module replacements before pinning versions
+	for _, p := range plugins {
+		if p.Replace != "" {
+			log.Printf("[INFO] Replace %s => %s", p.ModulePath, p.Replace)
+			cmd := env.newCommand("go", "mod", "edit",
+				"-replace", fmt.Sprintf("%s=%s", p.ModulePath, p.Replace))
+			err := env.runCommand(cmd, 10*time.Second)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	// pin versions by populating go.mod, first for Caddy itself and then plugins
 	log.Println("[INFO] Pinning versions")
 	err = env.execGoGet(caddyModulePath, caddyVersion)
@@ -110,6 +123,9 @@ func newEnvironment(caddyVersion string, plugins []CaddyPlugin) (*environment, e
 		return nil, err
 	}
 	for _, p := range plugins {
+		if p.Replace != "" {
+			continue
+		}
 		err = env.execGoGet(p.ModulePath, p.Version)
 		if err != nil {
 			return nil, err
@@ -123,7 +139,7 @@ func newEnvironment(caddyVersion string, plugins []CaddyPlugin) (*environment, e
 
 type environment struct {
 	caddyVersion    string
-	plugins         []CaddyPlugin
+	plugins         []Dependency
 	caddyModulePath string
 	tempFolder      string
 }

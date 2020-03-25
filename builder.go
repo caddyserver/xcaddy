@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -29,9 +30,9 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-// Build builds Caddy at the given version with the given plugins and plops
-// binary down at outputFile.
-func Build(caddyVersion string, plugins []CaddyPlugin, outputFile string) error {
+// Build builds Caddy at the given version with the given plugins and
+// plops a binary down at outputFile.
+func Build(caddyVersion string, deps []Dependency, outputFile string) error {
 	if caddyVersion == "" {
 		return fmt.Errorf("caddy version is required")
 	}
@@ -47,7 +48,7 @@ func Build(caddyVersion string, plugins []CaddyPlugin, outputFile string) error 
 		return err
 	}
 
-	env, err := newEnvironment(caddyVersion, plugins)
+	env, err := newEnvironment(caddyVersion, deps)
 	if err != nil {
 		return err
 	}
@@ -60,6 +61,7 @@ func Build(caddyVersion string, plugins []CaddyPlugin, outputFile string) error 
 		"-ldflags", "-w -s", // trim debug symbols
 		"-trimpath",
 	)
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	err = env.runCommand(cmd, 5*time.Minute)
 	if err != nil {
 		return err
@@ -70,10 +72,11 @@ func Build(caddyVersion string, plugins []CaddyPlugin, outputFile string) error 
 	return nil
 }
 
-// CaddyPlugin pairs a Go module path with a version.
-type CaddyPlugin struct {
+// Dependency pairs a Go module path with a version.
+type Dependency struct {
 	ModulePath string
 	Version    string
+	Replace    string
 }
 
 // newTempFolder creates a new folder in a temporary location.
