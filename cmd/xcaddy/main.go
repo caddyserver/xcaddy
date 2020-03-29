@@ -69,7 +69,7 @@ func runBuild(args []string) error {
 				return fmt.Errorf("expected value after --output flag")
 			}
 			i++
-			output = args[i+1]
+			output = args[i]
 
 		default:
 			if caddyVersion != "" {
