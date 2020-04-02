@@ -35,6 +35,12 @@ Versions can be anything compatible with `go get`.
 
 The CLI can be used both to make custom builds of Caddy, but also as a replacement for `go run` while developing Caddy plugins.
 
+### Download
+
+```
+go get -u github.com/caddyserver/xcaddy/cmd/xcaddy
+```
+
 ### For custom builds
 
 Syntax:
