@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/caddyserver/builder"
+	"github.com/caddyserver/xcaddy"
 )
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 func runBuild(args []string) error {
 	// parse the command line args... rather primitively
 	var caddyVersion, output string
-	var plugins []builder.Dependency
+	var plugins []xcaddy.Dependency
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--with":
@@ -59,7 +59,7 @@ func runBuild(args []string) error {
 			if len(parts) == 2 {
 				ver = parts[1]
 			}
-			plugins = append(plugins, builder.Dependency{
+			plugins = append(plugins, xcaddy.Dependency{
 				ModulePath: mod,
 				Version:    ver,
 			})
@@ -89,7 +89,7 @@ func runBuild(args []string) error {
 	}
 
 	// perform the build
-	err := builder.Build(caddyVersion, plugins, output)
+	err := xcaddy.Build(caddyVersion, plugins, output)
 	if err != nil {
 		log.Fatalf("[FATAL] %v", err)
 	}
@@ -131,7 +131,7 @@ func runDev(caddyVersion string, args []string) error {
 	moduleDir := strings.TrimSpace(string(out))
 
 	// build caddy with this module plugged in
-	err = builder.Build(caddyVersion, []builder.Dependency{
+	err = xcaddy.Build(caddyVersion, []xcaddy.Dependency{
 		{
 			ModulePath: currentModule,
 			Replace:    moduleDir,

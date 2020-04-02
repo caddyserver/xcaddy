@@ -17,15 +17,15 @@ Supports Caddy 2 and up.
 
 ```go
 caddyVersion := "v2.0.0-beta.20"
-plugins := []builder.Dependency{
-	builder.Dependency{
+plugins := []xcaddy.Dependency{
+	xcaddy.Dependency{
 		ModulePath: "github.com/caddyserver/nginx-adapter",
 		Version:    "6c484552e630ccac384d2d9c43c9d14c4e8d2e56",
 	},
 }
 output := "./caddy"
 
-err := builder.Build(caddyVersion, plugins, output)
+err := xcaddy.Build(caddyVersion, plugins, output)
 ```
 
 Versions can be anything compatible with `go get`.
