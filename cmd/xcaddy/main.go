@@ -36,7 +36,7 @@ func main() {
 	}
 
 	// TODO: the caddy version needs to be settable by the user... maybe an env var?
-	if err := runDev("v2.0.0-beta.20", os.Args[1:]); err != nil {
+	if err := runDev("v2.0.0-rc.1", os.Args[1:]); err != nil {
 		log.Fatalf("[ERROR] %v", err)
 	}
 }
@@ -89,7 +89,11 @@ func runBuild(args []string) error {
 	}
 
 	// perform the build
-	err := xcaddy.Build(caddyVersion, plugins, output)
+	builder := xcaddy.Builder{
+		CaddyVersion: caddyVersion,
+		Plugins:      plugins,
+	}
+	err := builder.Build(output)
 	if err != nil {
 		log.Fatalf("[FATAL] %v", err)
 	}
@@ -131,12 +135,16 @@ func runDev(caddyVersion string, args []string) error {
 	moduleDir := strings.TrimSpace(string(out))
 
 	// build caddy with this module plugged in
-	err = xcaddy.Build(caddyVersion, []xcaddy.Dependency{
-		{
-			ModulePath: currentModule,
-			Replace:    moduleDir,
+	builder := xcaddy.Builder{
+		CaddyVersion: caddyVersion,
+		Plugins: []xcaddy.Dependency{
+			{
+				ModulePath: currentModule,
+				Replace:    moduleDir,
+			},
 		},
-	}, binOutput)
+	}
+	err = builder.Build(binOutput)
 	if err != nil {
 		return err
 	}

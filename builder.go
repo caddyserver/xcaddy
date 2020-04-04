@@ -30,11 +30,18 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-// Build builds Caddy at the given version with the given plugins and
-// plops a binary down at outputFile.
-func Build(caddyVersion string, deps []Dependency, outputFile string) error {
-	if caddyVersion == "" {
-		return fmt.Errorf("caddy version is required")
+// Builder can produce a custom Caddy build with the
+// configuration it represents.
+type Builder struct {
+	CaddyVersion string       `json:"caddy_version,omitempty"`
+	Plugins      []Dependency `json:"plugins,omitempty"`
+}
+
+// Build builds Caddy at the configured version with the
+// configured plugins and plops down a binary at outputFile.
+func (b Builder) Build(outputFile string) error {
+	if b.CaddyVersion == "" {
+		return fmt.Errorf("CaddyVersion must be set")
 	}
 	if outputFile == "" {
 		return fmt.Errorf("output file path is required")
@@ -48,7 +55,7 @@ func Build(caddyVersion string, deps []Dependency, outputFile string) error {
 		return err
 	}
 
-	env, err := newEnvironment(caddyVersion, deps)
+	env, err := b.newEnvironment()
 	if err != nil {
 		return err
 	}
@@ -74,9 +81,17 @@ func Build(caddyVersion string, deps []Dependency, outputFile string) error {
 
 // Dependency pairs a Go module path with a version.
 type Dependency struct {
+	// The name (path) of the Go module. If at a version > 1, it
+	// should contain semantic import version suffix (i.e. "/v2").
+	// Used with `go get`
 	ModulePath string
-	Version    string
-	Replace    string
+
+	// The version of the Go module, like used with `go get`.
+	Version string
+
+	// Optional path to a replacement module. Equivalent to
+	// a `replace` directive in go.mod.
+	Replace string
 }
 
 // newTempFolder creates a new folder in a temporary location.

@@ -27,20 +27,20 @@ import (
 	"time"
 )
 
-func newEnvironment(caddyVersion string, plugins []Dependency) (*environment, error) {
-	// assume v2 if no semantic version is provided
+func (b Builder) newEnvironment() (*environment, error) {
+	// assume Caddy v2 if no semantic version is provided
 	caddyModulePath := defaultCaddyModulePath
-	if !strings.HasPrefix(caddyVersion, "v") || !strings.Contains(caddyVersion, ".") {
+	if !strings.HasPrefix(b.CaddyVersion, "v") || !strings.Contains(b.CaddyVersion, ".") {
 		caddyModulePath += "/v2"
 	}
-	caddyModulePath, err := versionedModulePath(caddyModulePath, caddyVersion)
+	caddyModulePath, err := versionedModulePath(caddyModulePath, b.CaddyVersion)
 	if err != nil {
 		return nil, err
 	}
 
 	// clean up any SIV-incompatible module paths real quick
-	for i, p := range plugins {
-		plugins[i].ModulePath, err = versionedModulePath(p.ModulePath, p.Version)
+	for i, p := range b.Plugins {
+		b.Plugins[i].ModulePath, err = versionedModulePath(p.ModulePath, p.Version)
 		if err != nil {
 			return nil, err
 		}
@@ -50,7 +50,7 @@ func newEnvironment(caddyVersion string, plugins []Dependency) (*environment, er
 	ctx := moduleTemplateContext{
 		CaddyModule: caddyModulePath,
 	}
-	for _, p := range plugins {
+	for _, p := range b.Plugins {
 		ctx.Plugins = append(ctx.Plugins, p.ModulePath)
 	}
 
@@ -89,8 +89,8 @@ func newEnvironment(caddyVersion string, plugins []Dependency) (*environment, er
 	}
 
 	env := &environment{
-		caddyVersion:    caddyVersion,
-		plugins:         plugins,
+		caddyVersion:    b.CaddyVersion,
+		plugins:         b.Plugins,
 		caddyModulePath: caddyModulePath,
 		tempFolder:      tempFolder,
 	}
@@ -104,25 +104,26 @@ func newEnvironment(caddyVersion string, plugins []Dependency) (*environment, er
 	}
 
 	// specify module replacements before pinning versions
-	for _, p := range plugins {
-		if p.Replace != "" {
-			log.Printf("[INFO] Replace %s => %s", p.ModulePath, p.Replace)
-			cmd := env.newCommand("go", "mod", "edit",
-				"-replace", fmt.Sprintf("%s=%s", p.ModulePath, p.Replace))
-			err := env.runCommand(cmd, 10*time.Second)
-			if err != nil {
-				return nil, err
-			}
+	for _, p := range b.Plugins {
+		if p.Replace == "" {
+			continue
+		}
+		log.Printf("[INFO] Replace %s => %s", p.ModulePath, p.Replace)
+		cmd := env.newCommand("go", "mod", "edit",
+			"-replace", fmt.Sprintf("%s=%s", p.ModulePath, p.Replace))
+		err := env.runCommand(cmd, 10*time.Second)
+		if err != nil {
+			return nil, err
 		}
 	}
 
 	// pin versions by populating go.mod, first for Caddy itself and then plugins
 	log.Println("[INFO] Pinning versions")
-	err = env.execGoGet(caddyModulePath, caddyVersion)
+	err = env.execGoGet(caddyModulePath, b.CaddyVersion)
 	if err != nil {
 		return nil, err
 	}
-	for _, p := range plugins {
+	for _, p := range b.Plugins {
 		if p.Replace != "" {
 			continue
 		}

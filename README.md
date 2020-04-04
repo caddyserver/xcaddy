@@ -16,16 +16,18 @@ Supports Caddy 2 and up.
 ## Library usage
 
 ```go
-caddyVersion := "v2.0.0-beta.20"
-plugins := []xcaddy.Dependency{
-	xcaddy.Dependency{
-		ModulePath: "github.com/caddyserver/nginx-adapter",
-		Version:    "6c484552e630ccac384d2d9c43c9d14c4e8d2e56",
-	},
+builder := xcaddy.Builder{
+	CaddyVersion: "v2.0.0-rc.1",
+	Plugins: []xcaddy.Dependency{
+		{
+			{
+				ModulePath: "github.com/caddyserver/nginx-adapter",
+				Version:    "bdbb6db7ff9ad6ceb0dcd93f89e396f6365aa5d4",
+			},
+		}
+	}
 }
-output := "./caddy"
-
-err := xcaddy.Build(caddyVersion, plugins, output)
+err := builder.Build("./caddy")
 ```
 
 Versions can be anything compatible with `go get`.
@@ -60,8 +62,8 @@ Where:
 For example:
 
 ```bash
-$ xcaddy build v2.0.0-beta.20 \
-	--with github.com/caddyserver/nginx-adapter@6c484552e630ccac384d2d9c43c9d14c4e8d2e56
+$ xcaddy build v2.0.0-rc.1 \
+	--with github.com/caddyserver/nginx-adapter@bdbb6db7ff9ad6ceb0dcd93f89e396f6365aa5d4
 ```
 
 ### For plugin development
