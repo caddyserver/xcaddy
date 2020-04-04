@@ -20,12 +20,10 @@ builder := xcaddy.Builder{
 	CaddyVersion: "v2.0.0-rc.1",
 	Plugins: []xcaddy.Dependency{
 		{
-			{
-				ModulePath: "github.com/caddyserver/nginx-adapter",
-				Version:    "bdbb6db7ff9ad6ceb0dcd93f89e396f6365aa5d4",
-			},
-		}
-	}
+			ModulePath: "github.com/caddyserver/nginx-adapter",
+			Version:    "bdbb6db7ff9ad6ceb0dcd93f89e396f6365aa5d4",
+		},
+	},
 }
 err := builder.Build("./caddy")
 ```
