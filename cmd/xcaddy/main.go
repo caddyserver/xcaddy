@@ -126,7 +126,7 @@ func runDev(caddyVersion string, args []string) error {
 	}
 	currentModule := strings.TrimSpace(string(out))
 
-	// get its root directory
+	// get the root directory of the main module
 	cmd = exec.Command("go", "list", "-m", "-f={{.Dir}}")
 	out, err = cmd.Output()
 	if err != nil {
