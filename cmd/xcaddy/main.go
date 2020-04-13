@@ -15,10 +15,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -28,20 +30,24 @@ import (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go trapSignals(ctx, cancel)
+
 	if len(os.Args) > 1 && os.Args[1] == "build" {
-		if err := runBuild(os.Args[2:]); err != nil {
+		if err := runBuild(ctx, os.Args[2:]); err != nil {
 			log.Fatalf("[ERROR] %v", err)
 		}
 		return
 	}
 
 	// TODO: the caddy version needs to be settable by the user... maybe an env var?
-	if err := runDev("v2.0.0-rc.1", os.Args[1:]); err != nil {
+	if err := runDev(ctx, "v2.0.0-rc.3", os.Args[1:]); err != nil {
 		log.Fatalf("[ERROR] %v", err)
 	}
 }
 
-func runBuild(args []string) error {
+func runBuild(ctx context.Context, args []string) error {
 	// parse the command line args... rather primitively
 	var caddyVersion, output string
 	var plugins []xcaddy.Dependency
@@ -93,7 +99,7 @@ func runBuild(args []string) error {
 		CaddyVersion: caddyVersion,
 		Plugins:      plugins,
 	}
-	err := builder.Build(output)
+	err := builder.Build(ctx, output)
 	if err != nil {
 		log.Fatalf("[FATAL] %v", err)
 	}
@@ -115,7 +121,7 @@ func runBuild(args []string) error {
 	return nil
 }
 
-func runDev(caddyVersion string, args []string) error {
+func runDev(ctx context.Context, caddyVersion string, args []string) error {
 	const binOutput = "./caddy"
 
 	// get current/main module name
@@ -134,17 +140,44 @@ func runDev(caddyVersion string, args []string) error {
 	}
 	moduleDir := strings.TrimSpace(string(out))
 
+	// make sure the module being developed is replaced
+	// so that the local copy is used
+	replacements := []xcaddy.Replace{
+		{
+			Old: currentModule,
+			New: moduleDir,
+		},
+	}
+
+	// replace directives only apply to the top-level/main go.mod,
+	// and since this tool is a carry-through for the user's actual
+	// go.mod, we need to transfer their replace directives through
+	// to the one we're making
+	cmd = exec.Command("go", "list", "-m", "-f={{if .Replace}}{{.Path}} => {{.Replace}}{{end}}", "all")
+	out, err = cmd.Output()
+	if err != nil {
+		return err
+	}
+	for _, line := range strings.Split(string(out), "\n") {
+		parts := strings.Split(line, "=>")
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			continue
+		}
+		replacements = append(replacements, xcaddy.Replace{
+			Old: strings.TrimSpace(parts[0]),
+			New: strings.TrimSpace(parts[1]),
+		})
+	}
+
 	// build caddy with this module plugged in
 	builder := xcaddy.Builder{
 		CaddyVersion: caddyVersion,
 		Plugins: []xcaddy.Dependency{
-			{
-				ModulePath: currentModule,
-				Replace:    moduleDir,
-			},
+			{ModulePath: currentModule},
 		},
+		Replacements: replacements,
 	}
-	err = builder.Build(binOutput)
+	err = builder.Build(ctx, binOutput)
 	if err != nil {
 		return err
 	}
@@ -168,9 +201,22 @@ func runDev(caddyVersion string, args []string) error {
 	}
 	defer cleanup()
 	go func() {
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 		cleanup()
 	}()
 
 	return cmd.Wait()
+}
+
+func trapSignals(ctx context.Context, cancel context.CancelFunc) {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt)
+
+	select {
+	case <-sig:
+		log.Printf("[INFO] SIGINT: Shutting down")
+		cancel()
+	case <-ctx.Done():
+		return
+	}
 }

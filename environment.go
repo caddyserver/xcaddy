@@ -16,6 +16,7 @@ package xcaddy
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -27,7 +28,7 @@ import (
 	"time"
 )
 
-func (b Builder) newEnvironment() (*environment, error) {
+func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	// assume Caddy v2 if no semantic version is provided
 	caddyModulePath := defaultCaddyModulePath
 	if !strings.HasPrefix(b.CaddyVersion, "v") || !strings.Contains(b.CaddyVersion, ".") {
@@ -47,11 +48,11 @@ func (b Builder) newEnvironment() (*environment, error) {
 	}
 
 	// create the context for the main module template
-	ctx := moduleTemplateContext{
+	tplCtx := goModTemplateContext{
 		CaddyModule: caddyModulePath,
 	}
 	for _, p := range b.Plugins {
-		ctx.Plugins = append(ctx.Plugins, p.ModulePath)
+		tplCtx.Plugins = append(tplCtx.Plugins, p.ModulePath)
 	}
 
 	// evaluate the template for the main module
@@ -60,7 +61,7 @@ func (b Builder) newEnvironment() (*environment, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = tpl.Execute(&buf, ctx)
+	err = tpl.Execute(&buf, tplCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -98,38 +99,51 @@ func (b Builder) newEnvironment() (*environment, error) {
 	// initialize the go module
 	log.Println("[INFO] Initializing Go module")
 	cmd := env.newCommand("go", "mod", "init", "caddy")
-	err = env.runCommand(cmd, 10*time.Second)
+	err = env.runCommand(ctx, cmd, 10*time.Second)
 	if err != nil {
 		return nil, err
 	}
 
 	// specify module replacements before pinning versions
-	for _, p := range b.Plugins {
-		if p.Replace == "" {
-			continue
-		}
-		log.Printf("[INFO] Replace %s => %s", p.ModulePath, p.Replace)
+	replaced := make(map[string]string)
+	for _, r := range b.Replacements {
+		log.Printf("[INFO] Replace %s => %s", r.Old, r.New)
 		cmd := env.newCommand("go", "mod", "edit",
-			"-replace", fmt.Sprintf("%s=%s", p.ModulePath, p.Replace))
-		err := env.runCommand(cmd, 10*time.Second)
+			"-replace", fmt.Sprintf("%s=%s", r.Old, r.New))
+		err := env.runCommand(ctx, cmd, 10*time.Second)
 		if err != nil {
 			return nil, err
 		}
+		replaced[r.Old] = r.New
+	}
+
+	// check for early abort
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
 	}
 
 	// pin versions by populating go.mod, first for Caddy itself and then plugins
 	log.Println("[INFO] Pinning versions")
-	err = env.execGoGet(caddyModulePath, b.CaddyVersion)
+	err = env.execGoGet(ctx, caddyModulePath, b.CaddyVersion)
 	if err != nil {
 		return nil, err
 	}
 	for _, p := range b.Plugins {
-		if p.Replace != "" {
+		// if module is locally available; do not "go get" it
+		if replaced[p.ModulePath] != "" {
 			continue
 		}
-		err = env.execGoGet(p.ModulePath, p.Version)
+		err = env.execGoGet(ctx, p.ModulePath, p.Version)
 		if err != nil {
 			return nil, err
+		}
+		// check for early abort
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
 		}
 	}
 
@@ -160,38 +174,59 @@ func (env environment) newCommand(command string, args ...string) *exec.Cmd {
 	return cmd
 }
 
-func (env environment) runCommand(cmd *exec.Cmd, timeout time.Duration) error {
+func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd, timeout time.Duration) error {
 	log.Printf("[INFO] exec (timeout=%s): %+v ", timeout, cmd)
 
-	// no timeout? this is easy; just run it
-	if timeout == 0 {
-		return cmd.Run()
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
 	}
 
-	// otherwise start it and use a timer
+	// start the command; if it fails to start, report error immediately
 	err := cmd.Start()
 	if err != nil {
 		return err
 	}
-	timer := time.AfterFunc(timeout, func() {
-		err = fmt.Errorf("timed out (builder-enforced)")
-		cmd.Process.Kill()
-	})
-	waitErr := cmd.Wait()
-	timer.Stop()
-	if err != nil {
-		return err
+
+	// wait for the command in a goroutine; the reason for this is
+	// very subtle: if, in our select, we do `case cmdErr := <-cmd.Wait()`,
+	// then that case would be chosen immediately, because cmd.Wait() is
+	// immediately available (even though it blocks for potentially a long
+	// time, it can be evaluated immediately). So we have to remove that
+	// evaluation from the `case` statement.
+	cmdErrChan := make(chan error)
+	go func() {
+		cmdErrChan <- cmd.Wait()
+	}()
+
+	// unblock either when the command finishes, or when the done
+	// channel is closed -- whichever comes first
+	select {
+	case cmdErr := <-cmdErrChan:
+		// process ended; report any error immediately
+		return cmdErr
+	case <-ctx.Done():
+		// context was canceled, either due to timeout or
+		// maybe a signal from higher up canceled the parent
+		// context; presumably, the OS also sent the signal
+		// to the child process, so wait for it to die
+		select {
+		case <-time.After(15 * time.Second):
+			cmd.Process.Kill()
+		case <-cmdErrChan:
+		}
+		return ctx.Err()
 	}
-	return waitErr
 }
 
-func (env environment) execGoGet(modulePath, moduleVersion string) error {
+func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion string) error {
 	mod := modulePath + "@" + moduleVersion
 	cmd := env.newCommand("go", "get", "-d", "-v", mod)
-	return env.runCommand(cmd, 60*time.Second)
+	return env.runCommand(ctx, cmd, 5*time.Minute)
 }
 
-type moduleTemplateContext struct {
+type goModTemplateContext struct {
 	CaddyModule string
 	Plugins     []string
 }

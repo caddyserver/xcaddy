@@ -15,6 +15,7 @@
 package xcaddy
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -35,11 +36,12 @@ import (
 type Builder struct {
 	CaddyVersion string       `json:"caddy_version,omitempty"`
 	Plugins      []Dependency `json:"plugins,omitempty"`
+	Replacements []Replace    `json:"replacements,omitempty"`
 }
 
 // Build builds Caddy at the configured version with the
 // configured plugins and plops down a binary at outputFile.
-func (b Builder) Build(outputFile string) error {
+func (b Builder) Build(ctx context.Context, outputFile string) error {
 	if b.CaddyVersion == "" {
 		return fmt.Errorf("CaddyVersion must be set")
 	}
@@ -55,7 +57,7 @@ func (b Builder) Build(outputFile string) error {
 		return err
 	}
 
-	env, err := b.newEnvironment()
+	env, err := b.newEnvironment(ctx)
 	if err != nil {
 		return err
 	}
@@ -69,7 +71,7 @@ func (b Builder) Build(outputFile string) error {
 		"-trimpath",
 	)
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
-	err = env.runCommand(cmd, 5*time.Minute)
+	err = env.runCommand(ctx, cmd, 5*time.Minute)
 	if err != nil {
 		return err
 	}
@@ -88,10 +90,15 @@ type Dependency struct {
 
 	// The version of the Go module, like used with `go get`.
 	Version string
+}
 
-	// Optional path to a replacement module. Equivalent to
-	// a `replace` directive in go.mod.
-	Replace string
+// Replace represents a Go module replacement.
+type Replace struct {
+	// The import path of the module being replaced.
+	Old string
+
+	// The path to the replacement module.
+	New string
 }
 
 // newTempFolder creates a new folder in a temporary location.
