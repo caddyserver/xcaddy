@@ -221,7 +221,10 @@ func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd, timeout ti
 }
 
 func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion string) error {
-	mod := modulePath + "@" + moduleVersion
+	mod := modulePath
+	if moduleVersion != "" {
+		mod += "@" + moduleVersion
+	}
 	cmd := env.newCommand("go", "get", "-d", "-v", mod)
 	return env.runCommand(ctx, cmd, 5*time.Minute)
 }
