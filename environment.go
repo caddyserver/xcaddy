@@ -126,7 +126,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// pin versions by populating go.mod, first for Caddy itself and then plugins
 	log.Println("[INFO] Pinning versions")
-	err = env.execGoGet(ctx, caddyModulePath, b.CaddyVersion)
+	err = env.execGoGet(ctx, caddyModulePath, env.caddyVersion)
 	if err != nil {
 		return nil, err
 	}

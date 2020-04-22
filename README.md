@@ -13,8 +13,8 @@ Stay updated, be aware of changes, and please submit feedback! Thanks!
 
 ## Requirements
 
-- Go installed
-- Go modules enabled
+- [Go installed](https://golang.org/doc/install)
+- [Go modules](https://github.com/golang/go/wiki/Modules) enabled
 
 
 ## Command usage
@@ -30,31 +30,44 @@ Install the `xcaddy` command with:
 $ go get -u github.com/caddyserver/xcaddy/cmd/xcaddy
 ```
 
+The `xcaddy` command will use the latest version of Caddy by default. You can customize this for all invocations by setting the `CADDY_VERSION` environment variable.
+
+As usual with `go` command, the `xcaddy` command will pass through the `GOOS`, `GOARCH`, and `GOARM` environment variables for cross-compilation.
+
 
 ### Custom builds
 
 Syntax:
 
 ```
-$ xcaddy build <caddy_version>
+$ xcaddy build [<caddy_version>]
     [--output <file>]
-    [--with <module[@version]>...]
+    [--with <module[@version][=replacement]>...]
 ```
 
-- `<caddy_version>` is the core Caddy version to build (required, for now).
+- `<caddy_version>` is the core Caddy version to build; defaults to `CADDY_VERSION` env variable or latest.
 - `--output` changes the output file.
 - `--with` can be used multiple times to add plugins by specifying the Go module name and optionally its version, similar to `go get`.
 
-For example:
+Examples:
 
 ```bash
-$ xcaddy build v2.0.0-rc.1 \
+$ xcaddy build \
+    --with github.com/caddyserver/ntlm-transport
+
+$ xcaddy build v2.0.1 \
     --with github.com/caddyserver/ntlm-transport@v0.1.0
+
+$ xcaddy build \
+    --with github.com/caddyserver/ntlm-transport=../../my-fork
+
+$ xcaddy build \
+    --with github.com/caddyserver/ntlm-transport=@v0.1.0=../../my-fork
 ```
 
 ### For plugin development
 
-If you run `xcaddy` from within the folder of the Caddy plugin you're working on without the `build` subcommand described above, it will build Caddy with your current module and run it, as if you manually plugged it in and ran `go run`.
+If you run `xcaddy` from within the folder of the Caddy plugin you're working on _without the `build` subcommand_, it will build Caddy with your current module and run it, as if you manually plugged it in and invoked `go run`.
 
 The binary will be built and run from the current directory, then cleaned up.
 

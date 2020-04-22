@@ -29,6 +29,8 @@ import (
 	"github.com/caddyserver/xcaddy"
 )
 
+var caddyVersion = os.Getenv("CADDY_VERSION")
+
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -41,16 +43,16 @@ func main() {
 		return
 	}
 
-	// TODO: the caddy version needs to be settable by the user... maybe an env var?
-	if err := runDev(ctx, "v2.0.0-rc.3", os.Args[1:]); err != nil {
+	if err := runDev(ctx, os.Args[1:]); err != nil {
 		log.Fatalf("[ERROR] %v", err)
 	}
 }
 
 func runBuild(ctx context.Context, args []string) error {
 	// parse the command line args... rather primitively
-	var caddyVersion, output string
+	var argCaddyVersion, output string
 	var plugins []xcaddy.Dependency
+	var replacements []xcaddy.Replace
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--with":
@@ -58,17 +60,20 @@ func runBuild(ctx context.Context, args []string) error {
 				return fmt.Errorf("expected value after --with flag")
 			}
 			i++
-			var mod, ver string
-			arg := args[i]
-			parts := strings.SplitN(arg, "@", 2)
-			mod = parts[0]
-			if len(parts) == 2 {
-				ver = parts[1]
+			mod, ver, repl, err := splitWith(args[i])
+			if err != nil {
+				return err
 			}
 			plugins = append(plugins, xcaddy.Dependency{
 				ModulePath: mod,
 				Version:    ver,
 			})
+			if repl != "" {
+				replacements = append(replacements, xcaddy.Replace{
+					Old: mod,
+					New: repl,
+				})
+			}
 
 		case "--output":
 			if i == len(args)-1 {
@@ -78,11 +83,16 @@ func runBuild(ctx context.Context, args []string) error {
 			output = args[i]
 
 		default:
-			if caddyVersion != "" {
-				return fmt.Errorf("missing flag; caddy version already set at %s", caddyVersion)
+			if argCaddyVersion != "" {
+				return fmt.Errorf("missing flag; caddy version already set at %s", argCaddyVersion)
 			}
-			caddyVersion = args[i]
+			argCaddyVersion = args[i]
 		}
+	}
+
+	// prefer caddy version from command line argument over env var
+	if argCaddyVersion != "" {
+		caddyVersion = argCaddyVersion
 	}
 
 	// ensure an output file is always specified
@@ -98,6 +108,7 @@ func runBuild(ctx context.Context, args []string) error {
 	builder := xcaddy.Builder{
 		CaddyVersion: caddyVersion,
 		Plugins:      plugins,
+		Replacements: replacements,
 	}
 	err := builder.Build(ctx, output)
 	if err != nil {
@@ -121,7 +132,7 @@ func runBuild(ctx context.Context, args []string) error {
 	return nil
 }
 
-func runDev(ctx context.Context, caddyVersion string, args []string) error {
+func runDev(ctx context.Context, args []string) error {
 	const binOutput = "./caddy"
 
 	// get current/main module name
@@ -219,4 +230,32 @@ func trapSignals(ctx context.Context, cancel context.CancelFunc) {
 	case <-ctx.Done():
 		return
 	}
+}
+
+func splitWith(arg string) (module, version, replace string, err error) {
+	const versionSplit, replaceSplit = "@", "="
+
+	parts := strings.SplitN(arg, versionSplit, 2)
+	module = parts[0]
+
+	if len(parts) == 1 {
+		parts := strings.SplitN(module, replaceSplit, 2)
+		if len(parts) > 1 {
+			module = parts[0]
+			replace = parts[1]
+		}
+	} else {
+		version = parts[1]
+		parts := strings.SplitN(version, replaceSplit, 2)
+		if len(parts) > 1 {
+			version = parts[0]
+			replace = parts[1]
+		}
+	}
+
+	if module == "" {
+		err = fmt.Errorf("module name is required")
+	}
+
+	return
 }

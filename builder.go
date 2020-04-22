@@ -42,9 +42,6 @@ type Builder struct {
 // Build builds Caddy at the configured version with the
 // configured plugins and plops down a binary at outputFile.
 func (b Builder) Build(ctx context.Context, outputFile string) error {
-	if b.CaddyVersion == "" {
-		return fmt.Errorf("CaddyVersion must be set")
-	}
 	if outputFile == "" {
 		return fmt.Errorf("output file path is required")
 	}
@@ -141,7 +138,11 @@ func newTempFolder() (string, error) {
 // of "foo" and "v2.0.0" will return "foo/v2", for use in Go imports and go commands.
 // Inputs that conflict, like "foo/v2" and "v3.1.0" are an error. This function
 // returns the input if the moduleVersion is not a valid semantic version string.
+// If moduleVersion is empty string, the input modulePath is returned without error.
 func versionedModulePath(modulePath, moduleVersion string) (string, error) {
+	if moduleVersion == "" {
+		return modulePath, nil
+	}
 	ver, err := semver.StrictNewVersion(strings.TrimPrefix(moduleVersion, "v"))
 	if err != nil {
 		// only return the error if we know they were trying to use a semantic version
