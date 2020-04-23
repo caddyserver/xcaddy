@@ -34,6 +34,7 @@ import (
 // Builder can produce a custom Caddy build with the
 // configuration it represents.
 type Builder struct {
+	Compile
 	CaddyVersion string       `json:"caddy_version,omitempty"`
 	Plugins      []Dependency `json:"plugins,omitempty"`
 	Replacements []Replace    `json:"replacements,omitempty"`
@@ -54,21 +55,42 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 		return err
 	}
 
-	env, err := b.newEnvironment(ctx)
+	// set some defaults from the environment, if applicable
+	if b.OS == "" {
+		b.OS = os.Getenv("GOOS")
+	}
+	if b.Arch == "" {
+		b.Arch = os.Getenv("GOARCH")
+	}
+	if b.ARM == "" {
+		b.ARM = os.Getenv("GOARM")
+	}
+
+	// prepare the build environment
+	buildEnv, err := b.newEnvironment(ctx)
 	if err != nil {
 		return err
 	}
-	defer env.Close()
+	defer buildEnv.Close()
+
+	// prepare the environmen for the go command; for
+	// the most part we want it to inherit our current
+	// environment, with a few customizations
+	env := os.Environ()
+	env = setEnv(env, "GOOS="+b.OS)
+	env = setEnv(env, "GOARCH="+b.Arch)
+	env = setEnv(env, "GOARM="+b.ARM)
+	env = setEnv(env, fmt.Sprintf("CGO_ENABLED=%t", b.Cgo))
 
 	log.Println("[INFO] Building Caddy")
 
-	cmd := env.newCommand("go", "build",
+	// compile
+	cmd := buildEnv.newCommand("go", "build",
 		"-o", absOutputFile,
 		"-ldflags", "-w -s", // trim debug symbols
 		"-trimpath",
 	)
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
-	err = env.runCommand(ctx, cmd, 5*time.Minute)
+	err = buildEnv.runCommand(ctx, cmd, 5*time.Minute)
 	if err != nil {
 		return err
 	}
@@ -78,24 +100,41 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	return nil
 }
 
+// setEnv sets an environment variable-value pair in
+// env, overriding an existing variable if it already
+// exists. The env slice is one such as is returned
+// by os.Environ(), and set must also have the form
+// of key=value.
+func setEnv(env []string, set string) []string {
+	parts := strings.SplitN(set, "=", 2)
+	key := parts[0]
+	for i := 0; i < len(env); i++ {
+		if strings.HasPrefix(env[i], key+"=") {
+			env[i] = set
+			return env
+		}
+	}
+	return append(env, set)
+}
+
 // Dependency pairs a Go module path with a version.
 type Dependency struct {
 	// The name (path) of the Go module. If at a version > 1, it
 	// should contain semantic import version suffix (i.e. "/v2").
 	// Used with `go get`
-	ModulePath string
+	ModulePath string `json:"module_path,omitempty"`
 
 	// The version of the Go module, like used with `go get`.
-	Version string
+	Version string `json:"version,omitempty"`
 }
 
 // Replace represents a Go module replacement.
 type Replace struct {
 	// The import path of the module being replaced.
-	Old string
+	Old string `json:"old,omitempty"`
 
 	// The path to the replacement module.
-	New string
+	New string `json:"new,omitempty"`
 }
 
 // newTempFolder creates a new folder in a temporary location.
@@ -148,7 +187,7 @@ func versionedModulePath(modulePath, moduleVersion string) (string, error) {
 		// only return the error if we know they were trying to use a semantic version
 		// (could have been a commit SHA or something)
 		if strings.HasPrefix(moduleVersion, "v") {
-			return "", err
+			return "", fmt.Errorf("%s: %v", moduleVersion, err)
 		}
 		return modulePath, nil
 	}
