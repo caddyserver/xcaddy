@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/caddyserver/xcaddy"
 )
@@ -203,17 +202,11 @@ func runDev(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	cleanup := func() {
+	defer func() {
 		err = os.Remove(binOutput)
 		if err != nil && !os.IsNotExist(err) {
 			log.Printf("[ERROR] Deleting temporary binary %s: %v", binOutput, err)
 		}
-	}
-	defer cleanup()
-	go func() {
-		time.Sleep(5 * time.Second)
-		cleanup()
 	}()
 
 	return cmd.Wait()
