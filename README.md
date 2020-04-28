@@ -103,7 +103,7 @@ builder := xcaddy.Builder{
 		},
 	},
 }
-err := builder.Build("./caddy")
+err := builder.Build(context.Background(), "./caddy")
 ```
 
 Versions can be anything compatible with `go get`.
