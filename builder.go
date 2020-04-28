@@ -90,6 +90,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 		"-ldflags", "-w -s", // trim debug symbols
 		"-trimpath",
 	)
+	cmd.Env = env
 	err = buildEnv.runCommand(ctx, cmd, 5*time.Minute)
 	if err != nil {
 		return err
