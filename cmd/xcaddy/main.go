@@ -49,6 +49,7 @@ func main() {
 
 func runBuild(ctx context.Context, args []string) error {
 	// parse the command line args... rather primitively
+	var cgoAllowed bool
 	var argCaddyVersion, output string
 	var plugins []xcaddy.Dependency
 	var replacements []xcaddy.Replace
@@ -73,6 +74,9 @@ func runBuild(ctx context.Context, args []string) error {
 					New: repl,
 				})
 			}
+
+		case "--enable-cgo":
+			cgoAllowed = true
 
 		case "--output":
 			if i == len(args)-1 {
@@ -101,6 +105,10 @@ func runBuild(ctx context.Context, args []string) error {
 		} else {
 			output = "caddy"
 		}
+	}
+
+	if cgoAllowed {
+		output = "CGO_ENABLED=1 " + output
 	}
 
 	// perform the build
