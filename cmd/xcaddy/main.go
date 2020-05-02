@@ -63,6 +63,7 @@ func runBuild(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
+			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
 			plugins = append(plugins, xcaddy.Dependency{
 				ModulePath: mod,
 				Version:    ver,
@@ -136,17 +137,19 @@ func runDev(ctx context.Context, args []string) error {
 
 	// get current/main module name
 	cmd := exec.Command("go", "list", "-m")
+	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
-		return err
+		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
 	}
 	currentModule := strings.TrimSpace(string(out))
 
 	// get the root directory of the main module
 	cmd = exec.Command("go", "list", "-m", "-f={{.Dir}}")
+	cmd.Stderr = os.Stderr
 	out, err = cmd.Output()
 	if err != nil {
-		return err
+		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
 	}
 	moduleDir := strings.TrimSpace(string(out))
 
@@ -164,9 +167,10 @@ func runDev(ctx context.Context, args []string) error {
 	// go.mod, we need to transfer their replace directives through
 	// to the one we're making
 	cmd = exec.Command("go", "list", "-m", "-f={{if .Replace}}{{.Path}} => {{.Replace}}{{end}}", "all")
+	cmd.Stderr = os.Stderr
 	out, err = cmd.Output()
 	if err != nil {
-		return err
+		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
 	}
 	for _, line := range strings.Split(string(out), "\n") {
 		parts := strings.Split(line, "=>")

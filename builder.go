@@ -73,7 +73,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	}
 	defer buildEnv.Close()
 
-	// prepare the environmen for the go command; for
+	// prepare the environment for the go command; for
 	// the most part we want it to inherit our current
 	// environment, with a few customizations
 	env := os.Environ()
