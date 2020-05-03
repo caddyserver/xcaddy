@@ -16,6 +16,14 @@ Stay updated, be aware of changes, and please submit feedback! Thanks!
 - [Go installed](https://golang.org/doc/install)
 - [Go modules](https://github.com/golang/go/wiki/Modules) enabled
 
+## Install
+
+You can [download binaries](https://github.com/caddyserver/xcaddy/releases) that are already compiled for your platform, or build `xcaddy` from source:
+
+```bash
+$ go get -u github.com/caddyserver/xcaddy/cmd/xcaddy
+```
+
 
 ## Command usage
 
@@ -24,15 +32,9 @@ The `xcaddy` command has two primary uses:
 - Compile custom `caddy` binaries
 - A replacement for `go run` while developing Caddy plugins
 
-Install the `xcaddy` command with:
-
-```bash
-$ go get -u github.com/caddyserver/xcaddy/cmd/xcaddy
-```
-
 The `xcaddy` command will use the latest version of Caddy by default. You can customize this for all invocations by setting the `CADDY_VERSION` environment variable.
 
-As usual with `go` command, the `xcaddy` command will pass through the `GOOS`, `GOARCH`, and `GOARM` environment variables for cross-compilation.
+As usual with `go` command, the `xcaddy` command will pass the `GOOS`, `GOARCH`, and `GOARM` environment variables through for cross-compilation.
 
 
 ### Custom builds
