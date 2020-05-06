@@ -1,2 +1,4 @@
 github.com/Masterminds/semver/v3 v3.1.0 h1:Y2lUDsFKVRSYGojLJ1yLxSXdMmMYTYls0rCvoqmMUQk=
 github.com/Masterminds/semver/v3 v3.1.0/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
+github.com/greenpau/versioned v1.0.18 h1:R6Vwm9j97CVife4KESf4xdbViUwrjNCLr1hWFfbeVUY=
+github.com/greenpau/versioned v1.0.18/go.mod h1:rtFCvaWWNbMH4CJnje/xicgmrM63j++rUh5juSu0k/A=

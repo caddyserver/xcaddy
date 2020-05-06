@@ -17,6 +17,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/caddyserver/xcaddy"
+	"github.com/greenpau/versioned"
 	"log"
 	"os"
 	"os/exec"
@@ -24,16 +26,49 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"github.com/caddyserver/xcaddy"
 )
 
 var caddyVersion = os.Getenv("CADDY_VERSION")
+
+var (
+	app        *versioned.PackageManager
+	appVersion string
+	gitBranch  string
+	gitCommit  string
+	buildUser  string
+	buildDate  string
+)
+
+func init() {
+	app = versioned.NewPackageManager("xcaddy")
+	app.Description = "Build Caddy with plugins"
+	app.Documentation = "https://github.com/caddyserver/xcaddy"
+	app.SetVersion(appVersion, "v0.1.3")
+	app.SetGitBranch(gitBranch, "")
+	app.SetGitCommit(gitCommit, "")
+	app.SetBuildUser(buildUser, "")
+	app.SetBuildDate(buildDate, "")
+}
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go trapSignals(ctx, cancel)
+
+	if len(os.Args) > 1 && (os.Args[1] == "version" || os.Args[1] == "-v" || os.Args[1] == "--version") {
+		fmt.Fprintf(os.Stdout, "%s\n", app.Banner())
+		os.Exit(0)
+	}
+
+	if len(os.Args) > 1 && (os.Args[1] == "help" || os.Args[1] == "-h" || os.Args[1] == "--help") {
+		fmt.Fprintf(os.Stderr, "\n%s - %s\n\n", app.Name, app.Description)
+		fmt.Fprintf(os.Stderr, "Usage: %s [arguments]\n\n", app.Name)
+		fmt.Fprintf(os.Stderr, "  xcaddy build [<caddy_version>]\n"+
+			"    [--output <file>]\n"+
+			"    [--with <module[@version][=replacement]>...]\n")
+		fmt.Fprintf(os.Stderr, "\nDocumentation: %s\n\n", app.Documentation)
+		os.Exit(0)
+	}
 
 	if len(os.Args) > 1 && os.Args[1] == "build" {
 		if err := runBuild(ctx, os.Args[2:]); err != nil {
