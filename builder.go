@@ -35,9 +35,11 @@ import (
 // configuration it represents.
 type Builder struct {
 	Compile
-	CaddyVersion string       `json:"caddy_version,omitempty"`
-	Plugins      []Dependency `json:"plugins,omitempty"`
-	Replacements []Replace    `json:"replacements,omitempty"`
+	CaddyVersion string        `json:"caddy_version,omitempty"`
+	Plugins      []Dependency  `json:"plugins,omitempty"`
+	Replacements []Replace     `json:"replacements,omitempty"`
+	TimeoutGet   time.Duration `json:"timeout_get,omitempty"`
+	TimeoutBuild time.Duration `json:"timeout_build,omitempty"`
 }
 
 // Build builds Caddy at the configured version with the
@@ -91,7 +93,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 		"-trimpath",
 	)
 	cmd.Env = env
-	err = buildEnv.runCommand(ctx, cmd, 5*time.Minute)
+	err = buildEnv.runCommand(ctx, cmd, b.TimeoutBuild)
 	if err != nil {
 		return err
 	}

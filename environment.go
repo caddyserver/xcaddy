@@ -94,6 +94,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 		plugins:         b.Plugins,
 		caddyModulePath: caddyModulePath,
 		tempFolder:      tempFolder,
+		timeoutGoGet:    b.TimeoutGet,
 	}
 
 	// initialize the go module
@@ -157,6 +158,7 @@ type environment struct {
 	plugins         []Dependency
 	caddyModulePath string
 	tempFolder      string
+	timeoutGoGet    time.Duration
 }
 
 // Close cleans up the build environment, including deleting
@@ -226,7 +228,7 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion 
 		mod += "@" + moduleVersion
 	}
 	cmd := env.newCommand("go", "get", "-d", "-v", mod)
-	return env.runCommand(ctx, cmd, 5*time.Minute)
+	return env.runCommand(ctx, cmd, env.timeoutGoGet)
 }
 
 type goModTemplateContext struct {
