@@ -40,6 +40,7 @@ type Builder struct {
 	Replacements []Replace     `json:"replacements,omitempty"`
 	TimeoutGet   time.Duration `json:"timeout_get,omitempty"`
 	TimeoutBuild time.Duration `json:"timeout_build,omitempty"`
+	RaceDetector bool          `json:"race_detector,omitempty"`
 }
 
 // Build builds Caddy at the configured version with the
@@ -92,6 +93,9 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 		"-ldflags", "-w -s", // trim debug symbols
 		"-trimpath",
 	)
+	if b.RaceDetector {
+		cmd.Args = append(cmd.Args, "-race")
+	}
 	cmd.Env = env
 	err = buildEnv.runCommand(ctx, cmd, b.TimeoutBuild)
 	if err != nil {

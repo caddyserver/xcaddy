@@ -58,13 +58,13 @@ $ xcaddy build \
     --with github.com/caddyserver/ntlm-transport
 
 $ xcaddy build v2.0.1 \
-    --with github.com/caddyserver/ntlm-transport@v0.1.0
+    --with github.com/caddyserver/ntlm-transport@v0.1.1
 
 $ xcaddy build \
     --with github.com/caddyserver/ntlm-transport=../../my-fork
 
 $ xcaddy build \
-    --with github.com/caddyserver/ntlm-transport@v0.1.0=../../my-fork
+    --with github.com/caddyserver/ntlm-transport@v0.1.1=../../my-fork
 ```
 
 ### For plugin development
@@ -90,18 +90,18 @@ $ xcaddy run
 $ xcaddy run --config caddy.json
 ```
 
-
+The race detector can be enabled by setting `CADDY_RACE_DETECTOR=1`.
 
 
 ## Library usage
 
 ```go
 builder := xcaddy.Builder{
-	CaddyVersion: "v2.0.0-rc.1",
+	CaddyVersion: "v2.0.0",
 	Plugins: []xcaddy.Dependency{
 		{
 			ModulePath: "github.com/caddyserver/ntlm-transport",
-			Version:    "v0.1.0",
+			Version:    "v0.1.1",
 		},
 	},
 }

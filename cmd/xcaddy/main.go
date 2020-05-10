@@ -28,7 +28,10 @@ import (
 	"github.com/caddyserver/xcaddy"
 )
 
-var caddyVersion = os.Getenv("CADDY_VERSION")
+var (
+	caddyVersion = os.Getenv("CADDY_VERSION")
+	raceDetector = os.Getenv("CADDY_RACE_DETECTOR") == "1"
+)
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -109,6 +112,7 @@ func runBuild(ctx context.Context, args []string) error {
 		CaddyVersion: caddyVersion,
 		Plugins:      plugins,
 		Replacements: replacements,
+		RaceDetector: raceDetector,
 	}
 	err := builder.Build(ctx, output)
 	if err != nil {
@@ -190,6 +194,7 @@ func runDev(ctx context.Context, args []string) error {
 			{ModulePath: currentModule},
 		},
 		Replacements: replacements,
+		RaceDetector: raceDetector,
 	}
 	err = builder.Build(ctx, binOutput)
 	if err != nil {
