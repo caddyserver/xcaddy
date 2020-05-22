@@ -11,6 +11,15 @@ type Compile struct {
 	Cgo bool `json:"cgo,omitempty"`
 }
 
+// CgoEnabled returns "1" if c.Cgo is true, "0" otherwise.
+// This is used for setting the CGO_ENABLED env variable.
+func (c Compile) CgoEnabled() string {
+	if c.Cgo {
+		return "1"
+	}
+	return "0"
+}
+
 // Platform represents a build target.
 type Platform struct {
 	OS   string `json:"os,omitempty"`

@@ -83,7 +83,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	env = setEnv(env, "GOOS="+b.OS)
 	env = setEnv(env, "GOARCH="+b.Arch)
 	env = setEnv(env, "GOARM="+b.ARM)
-	env = setEnv(env, fmt.Sprintf("CGO_ENABLED=%t", b.Cgo))
+	env = setEnv(env, fmt.Sprintf("CGO_ENABLED=%s", b.Compile.CgoEnabled()))
 
 	log.Println("[INFO] Building Caddy")
 

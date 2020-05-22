@@ -109,6 +109,9 @@ func runBuild(ctx context.Context, args []string) error {
 
 	// perform the build
 	builder := xcaddy.Builder{
+		Compile: xcaddy.Compile{
+			Cgo: os.Getenv("CGO_ENABLED") == "1",
+		},
 		CaddyVersion: caddyVersion,
 		Plugins:      plugins,
 		Replacements: replacements,
