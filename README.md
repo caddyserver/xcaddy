@@ -5,16 +5,13 @@ This command line tool and associated Go package makes it easy to make custom bu
 
 It is used heavily by Caddy plugin developers as well as anyone who wishes to make custom `caddy` binaries (with or without plugins).
 
-Supports Caddy 2 and up.
-
-⚠️ Still in development.
+⚠️ Still in development. Supports Caddy 2 only.
 
 Stay updated, be aware of changes, and please submit feedback! Thanks!
 
 ## Requirements
 
 - [Go installed](https://golang.org/doc/install)
-- [Go modules](https://github.com/golang/go/wiki/Modules) enabled
 
 ## Install
 
@@ -29,8 +26,8 @@ $ go get -u github.com/caddyserver/xcaddy/cmd/xcaddy
 
 The `xcaddy` command has two primary uses:
 
-- Compile custom `caddy` binaries
-- A replacement for `go run` while developing Caddy plugins
+1. Compile custom `caddy` binaries
+2. A replacement for `go run` while developing Caddy plugins
 
 The `xcaddy` command will use the latest version of Caddy by default. You can customize this for all invocations by setting the `CADDY_VERSION` environment variable.
 
@@ -90,7 +87,7 @@ $ xcaddy run
 $ xcaddy run --config caddy.json
 ```
 
-The race detector can be enabled by setting `CADDY_RACE_DETECTOR=1`.
+The race detector can be enabled by setting `XCADDY_RACE_DETECTOR=1`.
 
 
 ## Library usage

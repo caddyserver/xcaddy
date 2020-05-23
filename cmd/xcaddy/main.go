@@ -30,7 +30,7 @@ import (
 
 var (
 	caddyVersion = os.Getenv("CADDY_VERSION")
-	raceDetector = os.Getenv("CADDY_RACE_DETECTOR") == "1"
+	raceDetector = os.Getenv("XCADDY_RACE_DETECTOR") == "1"
 )
 
 func main() {
