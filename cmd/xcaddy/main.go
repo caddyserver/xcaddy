@@ -123,17 +123,19 @@ func runBuild(ctx context.Context, args []string) error {
 	}
 
 	// prove the build is working by printing the version
-	if !filepath.IsAbs(output) {
-		output = "." + string(filepath.Separator) + output
-	}
-	fmt.Println()
-	fmt.Printf("%s version\n", output)
-	cmd := exec.Command(output, "version")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		log.Fatalf("[FATAL] %v", err)
+	if runtime.GOOS == os.Getenv("GOOS") && runtime.GOARCH == os.Getenv("GOARCH") {
+		if !filepath.IsAbs(output) {
+			output = "." + string(filepath.Separator) + output
+		}
+		fmt.Println()
+		fmt.Printf("%s version\n", output)
+		cmd := exec.Command(output, "version")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Run()
+		if err != nil {
+			log.Fatalf("[FATAL] %v", err)
+		}
 	}
 
 	return nil
