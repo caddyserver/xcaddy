@@ -131,10 +131,16 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	if err != nil {
 		return nil, err
 	}
+nextPlugin:
 	for _, p := range b.Plugins {
-		// if module is locally available; do not "go get" it
-		if replaced[p.ModulePath] != "" {
-			continue
+		// if module is locally available, do not "go get" it;
+		// also note that we iterate and check prefixes, because
+		// a plugin package may be a subfolder of a module, i.e.
+		// foo/a/plugin is within module foo/a.
+		for repl := range replaced {
+			if strings.HasPrefix(p.ModulePath, repl) {
+				continue nextPlugin
+			}
 		}
 		err = env.execGoGet(ctx, p.ModulePath, p.Version)
 		if err != nil {

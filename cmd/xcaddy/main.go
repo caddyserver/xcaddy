@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -192,11 +193,20 @@ func runDev(ctx context.Context, args []string) error {
 		})
 	}
 
+	// reconcile remaining path segments; for example if a module foo/a
+	// is rooted at directory path /home/foo/a, but the current directory
+	// is /home/foo/a/b, then the package to import should be foo/a/b
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("unable to determine current directory: %v", err)
+	}
+	importPath := path.Join(currentModule, strings.TrimPrefix(cwd, filepath.ToSlash(moduleDir)))
+
 	// build caddy with this module plugged in
 	builder := xcaddy.Builder{
 		CaddyVersion: caddyVersion,
 		Plugins: []xcaddy.Dependency{
-			{ModulePath: currentModule},
+			{ModulePath: importPath},
 		},
 		Replacements: replacements,
 		RaceDetector: raceDetector,
