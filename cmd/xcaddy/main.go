@@ -70,8 +70,8 @@ func runBuild(ctx context.Context, args []string) error {
 			}
 			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
 			plugins = append(plugins, xcaddy.Dependency{
-				ModulePath: mod,
-				Version:    ver,
+				PackagePath: mod,
+				Version:     ver,
 			})
 			if repl != "" {
 				replacements = append(replacements, xcaddy.Replace{
@@ -211,7 +211,7 @@ func runDev(ctx context.Context, args []string) error {
 		},
 		CaddyVersion: caddyVersion,
 		Plugins: []xcaddy.Dependency{
-			{ModulePath: importPath},
+			{PackagePath: importPath},
 		},
 		Replacements: replacements,
 		RaceDetector: raceDetector,

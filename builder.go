@@ -131,12 +131,12 @@ func setEnv(env []string, set string) []string {
 
 // Dependency pairs a Go module path with a version.
 type Dependency struct {
-	// The name (path) of the Go module. If at a version > 1, it
-	// should contain semantic import version suffix (i.e. "/v2").
-	// Used with `go get`
-	ModulePath string `json:"module_path,omitempty"`
+	// The name (import path) of the Go package. If at a version > 1,
+	// it should contain semantic import version (i.e. "/v2").
+	// Used with `go get`.
+	PackagePath string `json:"module_path,omitempty"`
 
-	// The version of the Go module, like used with `go get`.
+	// The version of the Go module, as used with `go get`.
 	Version string `json:"version,omitempty"`
 }
 

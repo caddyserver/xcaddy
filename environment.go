@@ -41,7 +41,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// clean up any SIV-incompatible module paths real quick
 	for i, p := range b.Plugins {
-		b.Plugins[i].ModulePath, err = versionedModulePath(p.ModulePath, p.Version)
+		b.Plugins[i].PackagePath, err = versionedModulePath(p.PackagePath, p.Version)
 		if err != nil {
 			return nil, err
 		}
@@ -52,7 +52,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 		CaddyModule: caddyModulePath,
 	}
 	for _, p := range b.Plugins {
-		tplCtx.Plugins = append(tplCtx.Plugins, p.ModulePath)
+		tplCtx.Plugins = append(tplCtx.Plugins, p.PackagePath)
 	}
 
 	// evaluate the template for the main module
@@ -139,11 +139,11 @@ nextPlugin:
 		// a plugin package may be a subfolder of a module, i.e.
 		// foo/a/plugin is within module foo/a.
 		for repl := range replaced {
-			if strings.HasPrefix(p.ModulePath, repl) {
+			if strings.HasPrefix(p.PackagePath, repl) {
 				continue nextPlugin
 			}
 		}
-		err = env.execGoGet(ctx, p.ModulePath, p.Version)
+		err = env.execGoGet(ctx, p.PackagePath, p.Version)
 		if err != nil {
 			return nil, err
 		}
