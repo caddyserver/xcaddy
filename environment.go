@@ -95,6 +95,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 		caddyModulePath: caddyModulePath,
 		tempFolder:      tempFolder,
 		timeoutGoGet:    b.TimeoutGet,
+		skipCleanup:     b.SkipCleanup,
 	}
 
 	// initialize the go module
@@ -165,11 +166,16 @@ type environment struct {
 	caddyModulePath string
 	tempFolder      string
 	timeoutGoGet    time.Duration
+	skipCleanup     bool
 }
 
 // Close cleans up the build environment, including deleting
 // the temporary folder from the disk.
 func (env environment) Close() error {
+	if env.skipCleanup {
+		log.Printf("[INFO] Skipping cleanup as requested; leaving folder intact: %s", env.tempFolder)
+		return nil
+	}
 	log.Printf("[INFO] Cleaning up temporary folder: %s", env.tempFolder)
 	return os.RemoveAll(env.tempFolder)
 }

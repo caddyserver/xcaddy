@@ -32,6 +32,7 @@ import (
 var (
 	caddyVersion = os.Getenv("CADDY_VERSION")
 	raceDetector = os.Getenv("XCADDY_RACE_DETECTOR") == "1"
+	skipCleanup  = os.Getenv("XCADDY_SKIP_CLEANUP") == "1"
 )
 
 func main() {
@@ -117,6 +118,7 @@ func runBuild(ctx context.Context, args []string) error {
 		Plugins:      plugins,
 		Replacements: replacements,
 		RaceDetector: raceDetector,
+		SkipCleanup:  skipCleanup,
 	}
 	err := builder.Build(ctx, output)
 	if err != nil {
@@ -204,12 +206,16 @@ func runDev(ctx context.Context, args []string) error {
 
 	// build caddy with this module plugged in
 	builder := xcaddy.Builder{
+		Compile: xcaddy.Compile{
+			Cgo: os.Getenv("CGO_ENABLED") == "1",
+		},
 		CaddyVersion: caddyVersion,
 		Plugins: []xcaddy.Dependency{
 			{ModulePath: importPath},
 		},
 		Replacements: replacements,
 		RaceDetector: raceDetector,
+		SkipCleanup:  skipCleanup,
 	}
 	err = builder.Build(ctx, binOutput)
 	if err != nil {
@@ -227,6 +233,10 @@ func runDev(ctx context.Context, args []string) error {
 		return err
 	}
 	defer func() {
+		if skipCleanup {
+			log.Printf("[INFO] Skipping cleanup as requested; leaving artifact: %s", binOutput)
+			return
+		}
 		err = os.Remove(binOutput)
 		if err != nil && !os.IsNotExist(err) {
 			log.Printf("[ERROR] Deleting temporary binary %s: %v", binOutput, err)

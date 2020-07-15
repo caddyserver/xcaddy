@@ -41,6 +41,7 @@ type Builder struct {
 	TimeoutGet   time.Duration `json:"timeout_get,omitempty"`
 	TimeoutBuild time.Duration `json:"timeout_build,omitempty"`
 	RaceDetector bool          `json:"race_detector,omitempty"`
+	SkipCleanup  bool          `json:"skip_cleanup,omitempty"`
 }
 
 // Build builds Caddy at the configured version with the
@@ -83,6 +84,10 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	env = setEnv(env, "GOOS="+b.OS)
 	env = setEnv(env, "GOARCH="+b.Arch)
 	env = setEnv(env, "GOARM="+b.ARM)
+	if b.RaceDetector && !b.Compile.Cgo {
+		log.Println("[WARNING] Enabling cgo because it is required by the race detector")
+		b.Compile.Cgo = true
+	}
 	env = setEnv(env, fmt.Sprintf("CGO_ENABLED=%s", b.Compile.CgoEnabled()))
 
 	log.Println("[INFO] Building Caddy")
