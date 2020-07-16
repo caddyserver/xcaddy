@@ -109,6 +109,14 @@ Versions can be anything compatible with `go get`.
 
 
 
+## Environment variables
+
+Because the subcommands and flags are constrained to benefit rapid plugin prototyping, xcaddy does read some environment variables to take cues for its behavior and/or configuration when there is no room for flags.
+
+- `CADDY_VERSION` sets the version of Caddy to build.
+- `XCADDY_RACE_DETECTOR=1` enables the Go race detector in the build.
+- `XCADDY_SKIP_CLEANUP=1` causes xcaddy to leave build artifacts on disk after exiting.
+
 
 ---
 
