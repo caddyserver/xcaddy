@@ -61,13 +61,14 @@ release:
   github:
     owner: caddyserver
     name: xcaddy
-  draft: true
+  draft: false
   prerelease: auto
 
 changelog:
   sort: asc
   filters:
     exclude:
+    - '^readme:'
     - '^chore:'
     - '^ci:'
     - '^docs?:'
