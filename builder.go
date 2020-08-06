@@ -140,13 +140,40 @@ type Dependency struct {
 	Version string `json:"version,omitempty"`
 }
 
+// ReplacementPath represents an old or new path component within
+// a Go module replacement directive
+type ReplacementPath string
+
+// Param is a helper that reformats a go.mod replace directive
+// to be compatible with the go mod edit command
+func (r ReplacementPath) Param() string {
+	if r == "" {
+		return ""
+	}
+	return regexp.MustCompile(`\sv`).ReplaceAllString(string(r), "@v")
+}
+
+// String is a helper that casts the replacement path to a string
+func (r ReplacementPath) String() string {
+	return string(r)
+}
+
 // Replace represents a Go module replacement.
 type Replace struct {
 	// The import path of the module being replaced.
-	Old string `json:"old,omitempty"`
+	Old ReplacementPath `json:"old,omitempty"`
 
 	// The path to the replacement module.
-	New string `json:"new,omitempty"`
+	New ReplacementPath `json:"new,omitempty"`
+}
+
+// NewReplace creates a new instance of Replace provided old and
+// new Go module paths
+func NewReplace(old, new string) Replace {
+	return Replace{
+		Old: ReplacementPath(old),
+		New: ReplacementPath(new),
+	}
 }
 
 // newTempFolder creates a new folder in a temporary location.
