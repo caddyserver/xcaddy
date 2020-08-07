@@ -150,7 +150,7 @@ func (r ReplacementPath) Param() string {
 	if r == "" {
 		return ""
 	}
-	return regexp.MustCompile(`\sv`).ReplaceAllString(string(r), "@v")
+	return strings.Replace(string(r), " ", "@", 1)
 }
 
 // String is a helper that casts the replacement path to a string
