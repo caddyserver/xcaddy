@@ -74,10 +74,7 @@ func runBuild(ctx context.Context, args []string) error {
 				Version:     ver,
 			})
 			if repl != "" {
-				replacements = append(replacements, xcaddy.Replace{
-					Old: mod,
-					New: repl,
-				})
+				replacements = append(replacements, xcaddy.NewReplace(mod, repl))
 			}
 
 		case "--output":
@@ -168,10 +165,7 @@ func runDev(ctx context.Context, args []string) error {
 	// make sure the module being developed is replaced
 	// so that the local copy is used
 	replacements := []xcaddy.Replace{
-		{
-			Old: currentModule,
-			New: moduleDir,
-		},
+		xcaddy.NewReplace(currentModule, moduleDir),
 	}
 
 	// replace directives only apply to the top-level/main go.mod,
@@ -189,10 +183,10 @@ func runDev(ctx context.Context, args []string) error {
 		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 			continue
 		}
-		replacements = append(replacements, xcaddy.Replace{
-			Old: strings.TrimSpace(parts[0]),
-			New: strings.TrimSpace(parts[1]),
-		})
+		replacements = append(replacements, xcaddy.NewReplace(
+			strings.TrimSpace(parts[0]),
+			strings.TrimSpace(parts[1]),
+		))
 	}
 
 	// reconcile remaining path segments; for example if a module foo/a

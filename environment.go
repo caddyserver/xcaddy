@@ -109,14 +109,14 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	// specify module replacements before pinning versions
 	replaced := make(map[string]string)
 	for _, r := range b.Replacements {
-		log.Printf("[INFO] Replace %s => %s", r.Old, r.New)
+		log.Printf("[INFO] Replace %s => %s", r.Old.String(), r.New.String())
 		cmd := env.newCommand("go", "mod", "edit",
-			"-replace", fmt.Sprintf("%s=%s", r.Old, r.New))
+			"-replace", fmt.Sprintf("%s=%s", r.Old.Param(), r.New.Param()))
 		err := env.runCommand(ctx, cmd, 10*time.Second)
 		if err != nil {
 			return nil, err
 		}
-		replaced[r.Old] = r.New
+		replaced[r.Old.String()] = r.New.String()
 	}
 
 	// check for early abort
