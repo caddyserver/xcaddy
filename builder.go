@@ -140,23 +140,17 @@ type Dependency struct {
 	Version string `json:"version,omitempty"`
 }
 
-// ReplacementPath represents an old or new path component within
-// a Go module replacement directive
+// ReplacementPath represents an old or new path component
+// within a Go module replacement directive.
 type ReplacementPath string
 
-// Param is a helper that reformats a go.mod replace directive
-// to be compatible with the go mod edit command
+// Param reformats a go.mod replace directive to be
+// compatible with the `go mod edit` command.
 func (r ReplacementPath) Param() string {
-	if r == "" {
-		return ""
-	}
 	return strings.Replace(string(r), " ", "@", 1)
 }
 
-// String is a helper that casts the replacement path to a string
-func (r ReplacementPath) String() string {
-	return string(r)
-}
+func (r ReplacementPath) String() string { return string(r) }
 
 // Replace represents a Go module replacement.
 type Replace struct {
