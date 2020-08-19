@@ -1,3 +1,12 @@
 buildenv_*/
 _gitignore/
+
+# build artifacts
+cmd/xcaddy/xcaddy
+cmd/xcaddy/xcaddy.exe
+
+# mac
+.DS_Store
+
+# goreleaser artifacts
 dist/
