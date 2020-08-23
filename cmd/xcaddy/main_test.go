@@ -71,3 +71,34 @@ func TestSplitWith(t *testing.T) {
 		}
 	}
 }
+
+func Test_normalizeImportPath(t *testing.T) {
+	type args struct {
+		currentModule string
+		cwd           string
+		moduleDir     string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"linux-path", args{
+			currentModule: "github.com/caddyserver/xcaddy",
+			cwd:           "/xcaddy",
+			moduleDir:     "/xcaddy",
+		}, "github.com/caddyserver/xcaddy"},
+		{"windows-path", args{
+			currentModule: "github.com/caddyserver/xcaddy",
+			cwd:           "c:\\xcaddy",
+			moduleDir:     "c:\\xcaddy",
+		}, "github.com/caddyserver/xcaddy"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := normalizeImportPath(tt.args.currentModule, tt.args.cwd, tt.args.moduleDir); got != tt.want {
+				t.Errorf("normalizeImportPath() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
