@@ -99,11 +99,7 @@ func runBuild(ctx context.Context, args []string) error {
 
 	// ensure an output file is always specified
 	if output == "" {
-		if runtime.GOOS == "windows" {
-			output = "caddy.exe"
-		} else {
-			output = "caddy"
-		}
+		output = getCaddyOutputFile()
 	}
 
 	// perform the build
@@ -141,8 +137,15 @@ func runBuild(ctx context.Context, args []string) error {
 	return nil
 }
 
+func getCaddyOutputFile() string {
+	if runtime.GOOS == "windows" {
+		return "caddy.exe"
+	}
+	return "caddy"
+}
+
 func runDev(ctx context.Context, args []string) error {
-	const binOutput = "./caddy"
+	binOutput := getCaddyOutputFile()
 
 	// get current/main module name
 	cmd := exec.Command("go", "list", "-m")
