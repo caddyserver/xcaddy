@@ -243,7 +243,7 @@ func runDev(ctx context.Context, args []string) error {
 	return cmd.Wait()
 }
 
-func normalizeImportPath(currentModule string, cwd string, moduleDir string) string {
+func normalizeImportPath(currentModule, cwd, moduleDir string) string {
 	return path.Join(currentModule, filepath.ToSlash(strings.TrimPrefix(cwd, moduleDir)))
 }
 

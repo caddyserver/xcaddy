@@ -72,7 +72,7 @@ func TestSplitWith(t *testing.T) {
 	}
 }
 
-func Test_normalizeImportPath(t *testing.T) {
+func TestNormalizeImportPath(t *testing.T) {
 	type args struct {
 		currentModule string
 		cwd           string
