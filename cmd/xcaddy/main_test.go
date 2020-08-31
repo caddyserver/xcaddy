@@ -88,11 +88,21 @@ func TestNormalizeImportPath(t *testing.T) {
 			cwd:           "/xcaddy",
 			moduleDir:     "/xcaddy",
 		}, "github.com/caddyserver/xcaddy"},
+		{"linux-subpath", args{
+			currentModule: "github.com/caddyserver/xcaddy",
+			cwd:           "/xcaddy/subdir",
+			moduleDir:     "/xcaddy",
+		}, "github.com/caddyserver/xcaddy/subdir"},
 		{"windows-path", args{
 			currentModule: "github.com/caddyserver/xcaddy",
 			cwd:           "c:\\xcaddy",
 			moduleDir:     "c:\\xcaddy",
 		}, "github.com/caddyserver/xcaddy"},
+		{"windows-subpath", args{
+			currentModule: "github.com/caddyserver/xcaddy",
+			cwd:           "c:\\xcaddy\\subdir",
+			moduleDir:     "c:\\xcaddy",
+		}, "github.com/caddyserver/xcaddy/subdir"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
