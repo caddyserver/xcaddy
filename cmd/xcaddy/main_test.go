@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"runtime"
+	"testing"
+)
 
 func TestSplitWith(t *testing.T) {
 	for i, tc := range []struct {
@@ -73,16 +76,20 @@ func TestSplitWith(t *testing.T) {
 }
 
 func TestNormalizeImportPath(t *testing.T) {
-	type args struct {
-		currentModule string
-		cwd           string
-		moduleDir     string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
+	type (
+		args struct {
+			currentModule string
+			cwd           string
+			moduleDir     string
+		}
+		testCaseType []struct {
+			name string
+			args args
+			want string
+		}
+	)
+
+	tests := testCaseType{
 		{"linux-path", args{
 			currentModule: "github.com/caddyserver/xcaddy",
 			cwd:           "/xcaddy",
@@ -93,6 +100,8 @@ func TestNormalizeImportPath(t *testing.T) {
 			cwd:           "/xcaddy/subdir",
 			moduleDir:     "/xcaddy",
 		}, "github.com/caddyserver/xcaddy/subdir"},
+	}
+	windowsTests := testCaseType{
 		{"windows-path", args{
 			currentModule: "github.com/caddyserver/xcaddy",
 			cwd:           "c:\\xcaddy",
@@ -103,6 +112,9 @@ func TestNormalizeImportPath(t *testing.T) {
 			cwd:           "c:\\xcaddy\\subdir",
 			moduleDir:     "c:\\xcaddy",
 		}, "github.com/caddyserver/xcaddy/subdir"},
+	}
+	if runtime.GOOS == "windows" {
+		tests = append(tests, windowsTests...)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
