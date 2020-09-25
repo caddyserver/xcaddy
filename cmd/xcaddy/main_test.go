@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"runtime"
+	"testing"
+)
 
 func TestSplitWith(t *testing.T) {
 	for i, tc := range []struct {
@@ -69,5 +72,55 @@ func TestSplitWith(t *testing.T) {
 			t.Errorf("Test %d: Expected module '%s' but got '%s' (input='%s')",
 				i, tc.expectReplace, actualReplace, tc.input)
 		}
+	}
+}
+
+func TestNormalizeImportPath(t *testing.T) {
+	type (
+		args struct {
+			currentModule string
+			cwd           string
+			moduleDir     string
+		}
+		testCaseType []struct {
+			name string
+			args args
+			want string
+		}
+	)
+
+	tests := testCaseType{
+		{"linux-path", args{
+			currentModule: "github.com/caddyserver/xcaddy",
+			cwd:           "/xcaddy",
+			moduleDir:     "/xcaddy",
+		}, "github.com/caddyserver/xcaddy"},
+		{"linux-subpath", args{
+			currentModule: "github.com/caddyserver/xcaddy",
+			cwd:           "/xcaddy/subdir",
+			moduleDir:     "/xcaddy",
+		}, "github.com/caddyserver/xcaddy/subdir"},
+	}
+	windowsTests := testCaseType{
+		{"windows-path", args{
+			currentModule: "github.com/caddyserver/xcaddy",
+			cwd:           "c:\\xcaddy",
+			moduleDir:     "c:\\xcaddy",
+		}, "github.com/caddyserver/xcaddy"},
+		{"windows-subpath", args{
+			currentModule: "github.com/caddyserver/xcaddy",
+			cwd:           "c:\\xcaddy\\subdir",
+			moduleDir:     "c:\\xcaddy",
+		}, "github.com/caddyserver/xcaddy/subdir"},
+	}
+	if runtime.GOOS == "windows" {
+		tests = append(tests, windowsTests...)
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := normalizeImportPath(tt.args.currentModule, tt.args.cwd, tt.args.moduleDir); got != tt.want {
+				t.Errorf("normalizeImportPath() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

@@ -199,7 +199,7 @@ func runDev(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to determine current directory: %v", err)
 	}
-	importPath := path.Join(currentModule, strings.TrimPrefix(cwd, filepath.ToSlash(moduleDir)))
+	importPath := normalizeImportPath(currentModule, cwd, moduleDir)
 
 	// build caddy with this module plugged in
 	builder := xcaddy.Builder{
@@ -241,6 +241,10 @@ func runDev(ctx context.Context, args []string) error {
 	}()
 
 	return cmd.Wait()
+}
+
+func normalizeImportPath(currentModule, cwd, moduleDir string) string {
+	return path.Join(currentModule, filepath.ToSlash(strings.TrimPrefix(cwd, moduleDir)))
 }
 
 func trapSignals(ctx context.Context, cancel context.CancelFunc) {
