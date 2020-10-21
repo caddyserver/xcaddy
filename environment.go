@@ -29,12 +29,7 @@ import (
 )
 
 func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
-	// assume Caddy v2 if no semantic version is provided
-	caddyModulePath := defaultCaddyModulePath
-	if !strings.HasPrefix(b.CaddyVersion, "v") || !strings.Contains(b.CaddyVersion, ".") {
-		caddyModulePath += "/v2"
-	}
-	caddyModulePath, err := versionedModulePath(caddyModulePath, b.CaddyVersion)
+	k6ModulePath, err := versionedModulePath(defaultK6ModulePath, b.K6Version)
 	if err != nil {
 		return nil, err
 	}
