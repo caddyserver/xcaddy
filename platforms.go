@@ -1,4 +1,4 @@
-package xcaddy
+package xk6
 
 import (
 	"encoding/json"

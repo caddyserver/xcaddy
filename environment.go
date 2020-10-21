@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package xcaddy
+package xk6
 
 import (
 	"bytes"
@@ -49,7 +49,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// create the context for the main module template
 	tplCtx := goModTemplateContext{
-		CaddyModule: caddyModulePath,
+		K6Module: k6ModulePath,
 	}
 	for _, p := range b.Plugins {
 		tplCtx.Plugins = append(tplCtx.Plugins, p.PackagePath)
@@ -90,17 +90,17 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	}
 
 	env := &environment{
-		caddyVersion:    b.CaddyVersion,
-		plugins:         b.Plugins,
-		caddyModulePath: caddyModulePath,
-		tempFolder:      tempFolder,
-		timeoutGoGet:    b.TimeoutGet,
-		skipCleanup:     b.SkipCleanup,
+		k6Version:    b.K6Version,
+		plugins:      b.Plugins,
+		k6ModulePath: k6ModulePath,
+		tempFolder:   tempFolder,
+		timeoutGoGet: b.TimeoutGet,
+		skipCleanup:  b.SkipCleanup,
 	}
 
 	// initialize the go module
 	log.Println("[INFO] Initializing Go module")
-	cmd := env.newCommand("go", "mod", "init", "caddy")
+	cmd := env.newCommand("go", "mod", "init", "k6")
 	err = env.runCommand(ctx, cmd, 10*time.Second)
 	if err != nil {
 		return nil, err
@@ -126,9 +126,9 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	default:
 	}
 
-	// pin versions by populating go.mod, first for Caddy itself and then plugins
+	// pin versions by populating go.mod, first for k6 itself and then plugins
 	log.Println("[INFO] Pinning versions")
-	err = env.execGoGet(ctx, caddyModulePath, env.caddyVersion)
+	err = env.execGoGet(ctx, k6ModulePath, env.k6Version)
 	if err != nil {
 		return nil, err
 	}
@@ -161,12 +161,12 @@ nextPlugin:
 }
 
 type environment struct {
-	caddyVersion    string
-	plugins         []Dependency
-	caddyModulePath string
-	tempFolder      string
-	timeoutGoGet    time.Duration
-	skipCleanup     bool
+	k6Version    string
+	plugins      []Dependency
+	k6ModulePath string
+	tempFolder   string
+	timeoutGoGet time.Duration
+	skipCleanup  bool
 }
 
 // Close cleans up the build environment, including deleting
@@ -244,23 +244,23 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion 
 }
 
 type goModTemplateContext struct {
-	CaddyModule string
-	Plugins     []string
+	K6Module string
+	Plugins  []string
 }
 
 const mainModuleTemplate = `package main
 
 import (
-	caddycmd "{{.CaddyModule}}/cmd"
+	k6cmd "{{.K6Module}}/cmd"
 
-	// plug in Caddy modules here
-	_ "{{.CaddyModule}}/modules/standard"
+	// plug in k6 modules here
+	_ "{{.K6Module}}/modules/standard"
 	{{- range .Plugins}}
 	_ "{{.}}"
 	{{- end}}
 )
 
 func main() {
-	caddycmd.Main()
+	k6cmd.Main()
 }
 `

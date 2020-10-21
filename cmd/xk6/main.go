@@ -26,13 +26,13 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/caddyserver/xcaddy"
+	"github.com/k6io/xk6"
 )
 
 var (
-	caddyVersion = os.Getenv("CADDY_VERSION")
-	raceDetector = os.Getenv("XCADDY_RACE_DETECTOR") == "1"
-	skipCleanup  = os.Getenv("XCADDY_SKIP_CLEANUP") == "1"
+	k6Version    = os.Getenv("K6_VERSION")
+	raceDetector = os.Getenv("XK6_RACE_DETECTOR") == "1"
+	skipCleanup  = os.Getenv("XK6_SKIP_CLEANUP") == "1"
 )
 
 func main() {
@@ -54,9 +54,9 @@ func main() {
 
 func runBuild(ctx context.Context, args []string) error {
 	// parse the command line args... rather primitively
-	var argCaddyVersion, output string
-	var plugins []xcaddy.Dependency
-	var replacements []xcaddy.Replace
+	var argK6Version, output string
+	var plugins []xk6.Dependency
+	var replacements []xk6.Replace
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--with":
@@ -69,12 +69,12 @@ func runBuild(ctx context.Context, args []string) error {
 				return err
 			}
 			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
-			plugins = append(plugins, xcaddy.Dependency{
+			plugins = append(plugins, xk6.Dependency{
 				PackagePath: mod,
 				Version:     ver,
 			})
 			if repl != "" {
-				replacements = append(replacements, xcaddy.NewReplace(mod, repl))
+				replacements = append(replacements, xk6.NewReplace(mod, repl))
 			}
 
 		case "--output":
@@ -85,29 +85,29 @@ func runBuild(ctx context.Context, args []string) error {
 			output = args[i]
 
 		default:
-			if argCaddyVersion != "" {
-				return fmt.Errorf("missing flag; caddy version already set at %s", argCaddyVersion)
+			if argK6Version != "" {
+				return fmt.Errorf("missing flag; k6 version already set at %s", argK6Version)
 			}
-			argCaddyVersion = args[i]
+			argK6Version = args[i]
 		}
 	}
 
-	// prefer caddy version from command line argument over env var
-	if argCaddyVersion != "" {
-		caddyVersion = argCaddyVersion
+	// prefer k6 version from command line argument over env var
+	if argK6Version != "" {
+		k6Version = argK6Version
 	}
 
 	// ensure an output file is always specified
 	if output == "" {
-		output = getCaddyOutputFile()
+		output = getK6OutputFile()
 	}
 
 	// perform the build
-	builder := xcaddy.Builder{
-		Compile: xcaddy.Compile{
+	builder := xk6.Builder{
+		Compile: xk6.Compile{
 			Cgo: os.Getenv("CGO_ENABLED") == "1",
 		},
-		CaddyVersion: caddyVersion,
+		K6Version:    k6Version,
 		Plugins:      plugins,
 		Replacements: replacements,
 		RaceDetector: raceDetector,
@@ -137,15 +137,15 @@ func runBuild(ctx context.Context, args []string) error {
 	return nil
 }
 
-func getCaddyOutputFile() string {
+func getK6OutputFile() string {
 	if runtime.GOOS == "windows" {
-		return "caddy.exe"
+		return "k6.exe"
 	}
-	return "caddy"
+	return "k6"
 }
 
 func runDev(ctx context.Context, args []string) error {
-	binOutput := getCaddyOutputFile()
+	binOutput := getK6OutputFile()
 
 	// get current/main module name
 	cmd := exec.Command("go", "list", "-m")
@@ -167,8 +167,8 @@ func runDev(ctx context.Context, args []string) error {
 
 	// make sure the module being developed is replaced
 	// so that the local copy is used
-	replacements := []xcaddy.Replace{
-		xcaddy.NewReplace(currentModule, moduleDir),
+	replacements := []xk6.Replace{
+		xk6.NewReplace(currentModule, moduleDir),
 	}
 
 	// replace directives only apply to the top-level/main go.mod,
@@ -186,7 +186,7 @@ func runDev(ctx context.Context, args []string) error {
 		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 			continue
 		}
-		replacements = append(replacements, xcaddy.NewReplace(
+		replacements = append(replacements, xk6.NewReplace(
 			strings.TrimSpace(parts[0]),
 			strings.TrimSpace(parts[1]),
 		))
@@ -201,13 +201,13 @@ func runDev(ctx context.Context, args []string) error {
 	}
 	importPath := normalizeImportPath(currentModule, cwd, moduleDir)
 
-	// build caddy with this module plugged in
-	builder := xcaddy.Builder{
-		Compile: xcaddy.Compile{
+	// build k6 with this module plugged in
+	builder := xk6.Builder{
+		Compile: xk6.Compile{
 			Cgo: os.Getenv("CGO_ENABLED") == "1",
 		},
-		CaddyVersion: caddyVersion,
-		Plugins: []xcaddy.Dependency{
+		K6Version: k6Version,
+		Plugins: []xk6.Dependency{
 			{PackagePath: importPath},
 		},
 		Replacements: replacements,

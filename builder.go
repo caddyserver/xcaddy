@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package xcaddy
+package xk6
 
 import (
 	"context"
@@ -31,11 +31,11 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-// Builder can produce a custom Caddy build with the
+// Builder can produce a custom k6 build with the
 // configuration it represents.
 type Builder struct {
 	Compile
-	CaddyVersion string        `json:"caddy_version,omitempty"`
+	K6Version    string        `json:"k6_version,omitempty"`
 	Plugins      []Dependency  `json:"plugins,omitempty"`
 	Replacements []Replace     `json:"replacements,omitempty"`
 	TimeoutGet   time.Duration `json:"timeout_get,omitempty"`
@@ -44,7 +44,7 @@ type Builder struct {
 	SkipCleanup  bool          `json:"skip_cleanup,omitempty"`
 }
 
-// Build builds Caddy at the configured version with the
+// Build builds k6 at the configured version with the
 // configured plugins and plops down a binary at outputFile.
 func (b Builder) Build(ctx context.Context, outputFile string) error {
 	if outputFile == "" {
@@ -90,7 +90,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	}
 	env = setEnv(env, fmt.Sprintf("CGO_ENABLED=%s", b.Compile.CgoEnabled()))
 
-	log.Println("[INFO] Building Caddy")
+	log.Println("[INFO] Building k6")
 
 	// compile
 	cmd := buildEnv.newCommand("go", "build",
@@ -250,5 +250,5 @@ const (
 	// used for temporary folder paths.
 	yearMonthDayHourMin = "2006-01-02-1504"
 
-	defaultCaddyModulePath = "github.com/caddyserver/caddy"
+	defaultK6ModulePath = "github.com/loadimpact/k6"
 )

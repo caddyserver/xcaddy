@@ -91,27 +91,27 @@ func TestNormalizeImportPath(t *testing.T) {
 
 	tests := testCaseType{
 		{"linux-path", args{
-			currentModule: "github.com/caddyserver/xcaddy",
-			cwd:           "/xcaddy",
-			moduleDir:     "/xcaddy",
-		}, "github.com/caddyserver/xcaddy"},
+			currentModule: "github.com/k6io/xk6",
+			cwd:           "/xk6",
+			moduleDir:     "/xk6",
+		}, "github.com/k6io/xk6"},
 		{"linux-subpath", args{
-			currentModule: "github.com/caddyserver/xcaddy",
-			cwd:           "/xcaddy/subdir",
-			moduleDir:     "/xcaddy",
-		}, "github.com/caddyserver/xcaddy/subdir"},
+			currentModule: "github.com/k6io/xk6",
+			cwd:           "/xk6/subdir",
+			moduleDir:     "/xk6",
+		}, "github.com/k6io/xk6/subdir"},
 	}
 	windowsTests := testCaseType{
 		{"windows-path", args{
-			currentModule: "github.com/caddyserver/xcaddy",
-			cwd:           "c:\\xcaddy",
-			moduleDir:     "c:\\xcaddy",
-		}, "github.com/caddyserver/xcaddy"},
+			currentModule: "github.com/k6io/xk6",
+			cwd:           "c:\\xk6",
+			moduleDir:     "c:\\xk6",
+		}, "github.com/k6io/xk6"},
 		{"windows-subpath", args{
-			currentModule: "github.com/caddyserver/xcaddy",
-			cwd:           "c:\\xcaddy\\subdir",
-			moduleDir:     "c:\\xcaddy",
-		}, "github.com/caddyserver/xcaddy/subdir"},
+			currentModule: "github.com/k6io/xk6",
+			cwd:           "c:\\xk6\\subdir",
+			moduleDir:     "c:\\xk6",
+		}, "github.com/k6io/xk6/subdir"},
 	}
 	if runtime.GOOS == "windows" {
 		tests = append(tests, windowsTests...)
