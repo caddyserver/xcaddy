@@ -249,13 +249,14 @@ import (
 	k6cmd "{{.K6Module}}/cmd"
 
 	// plug in k6 modules here
-	_ "{{.K6Module}}/modules/standard"
+	// TODO: Create /modules/standard dir structure?
+	// _ "{{.K6Module}}/modules/standard"
 	{{- range .Plugins}}
 	_ "{{.}}"
 	{{- end}}
 )
 
 func main() {
-	k6cmd.Main()
+	k6cmd.Execute()
 }
 `
