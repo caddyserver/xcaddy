@@ -20,19 +20,19 @@ jobs:
         go-version: [ 1.14.x ]
 
         # Set some variables per OS, usable via ${{ matrix.VAR }}
-        # XCADDY_BIN_PATH: the path to the compiled Caddy binary, for artifact publishing
+        # XK6_BIN_PATH: the path to the compiled k6 binary, for artifact publishing
         # SUCCESS: the typical value for $? per OS (Windows/pwsh returns 'True')
         include:
         - os: ubuntu-latest
-          XCADDY_BIN_PATH: ./cmd/xcaddy/xcaddy
+          XK6_BIN_PATH: ./cmd/xk6/xk6
           SUCCESS: 0
 
         - os: macos-latest
-          XCADDY_BIN_PATH: ./cmd/xcaddy/xcaddy
+          XK6_BIN_PATH: ./cmd/xk6/xk6
           SUCCESS: 0
 
         - os: windows-latest
-          XCADDY_BIN_PATH: ./cmd/xcaddy/xcaddy.exe
+          XK6_BIN_PATH: ./cmd/xk6/xk6.exe
           SUCCESS: 'True'
 
     runs-on: ${{ matrix.os }}
@@ -71,8 +71,8 @@ jobs:
       run: |
         go get -v -t -d ./...
 
-    - name: Build xCaddy
-      working-directory: ./cmd/xcaddy
+    - name: Build xk6
+      working-directory: ./cmd/xk6
       env:
         CGO_ENABLED: 0
       run: |
@@ -81,8 +81,8 @@ jobs:
     - name: Publish Build Artifact
       uses: actions/upload-artifact@v1
       with:
-        name: xcaddy_${{ runner.os }}_${{ steps.vars.outputs.short_sha }}
-        path: ${{ matrix.XCADDY_BIN_PATH }}
+        name: xk6_${{ runner.os }}_${{ steps.vars.outputs.short_sha }}
+        path: ${{ matrix.XK6_BIN_PATH }}
 
     - name: Run tests
       run: |
