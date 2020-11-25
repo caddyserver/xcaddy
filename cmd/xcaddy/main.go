@@ -32,7 +32,8 @@ import (
 var (
 	caddyVersion = os.Getenv("CADDY_VERSION")
 	raceDetector = os.Getenv("XCADDY_RACE_DETECTOR") == "1"
-	skipCleanup  = os.Getenv("XCADDY_SKIP_CLEANUP") == "1"
+	noBuild      = os.Getenv("XCADDY_NO_BUILD") == "1"
+	skipCleanup  = noBuild || os.Getenv("XCADDY_SKIP_CLEANUP") == "1"
 )
 
 func main() {
@@ -112,6 +113,7 @@ func runBuild(ctx context.Context, args []string) error {
 		Replacements: replacements,
 		RaceDetector: raceDetector,
 		SkipCleanup:  skipCleanup,
+		NoBuild:      noBuild,
 	}
 	err := builder.Build(ctx, output)
 	if err != nil {
@@ -217,6 +219,7 @@ func runDev(ctx context.Context, args []string) error {
 		Replacements: replacements,
 		RaceDetector: raceDetector,
 		SkipCleanup:  skipCleanup,
+		NoBuild:      noBuild,
 	}
 	err = builder.Build(ctx, binOutput)
 	if err != nil {
