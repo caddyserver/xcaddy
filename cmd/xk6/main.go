@@ -74,6 +74,13 @@ func runBuild(ctx context.Context, args []string) error {
 				Version:     ver,
 			})
 			if repl != "" {
+				if repl == "." {
+					if cwd, err := os.Getwd(); err != nil {
+						return err
+					} else {
+						repl = cwd
+					}
+				}
 				replacements = append(replacements, xk6.NewReplace(mod, repl))
 			}
 
