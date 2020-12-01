@@ -146,9 +146,9 @@ func runBuild(ctx context.Context, args []string) error {
 
 func getK6OutputFile() string {
 	if runtime.GOOS == "windows" {
-		return "k6.exe"
+		return ".\\k6.exe"
 	}
-	return "k6"
+	return "./k6"
 }
 
 func runDev(ctx context.Context, args []string) error {
