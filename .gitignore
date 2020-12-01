@@ -2,8 +2,8 @@ buildenv_*/
 _gitignore/
 
 # build artifacts
-cmd/xcaddy/xcaddy
-cmd/xcaddy/xcaddy.exe
+cmd/xk6/xk6
+cmd/xk6/xk6.exe
 
 # mac
 .DS_Store

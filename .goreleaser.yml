@@ -7,8 +7,8 @@ builds:
   - CGO_ENABLED=0
   - GO111MODULE=on
   main: main.go
-  dir: ./cmd/xcaddy
-  binary: xcaddy
+  dir: ./cmd/xk6
+  binary: xk6
   goos:
   - darwin
   - linux
@@ -59,8 +59,8 @@ checksum:
 
 release:
   github:
-    owner: caddyserver
-    name: xcaddy
+    owner: k6io
+    name: xk6
   draft: false
   prerelease: auto
 
