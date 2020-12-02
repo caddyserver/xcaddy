@@ -74,6 +74,13 @@ func runBuild(ctx context.Context, args []string) error {
 				Version:     ver,
 			})
 			if repl != "" {
+				if repl == "." {
+					if cwd, err := os.Getwd(); err != nil {
+						return err
+					} else {
+						repl = cwd
+					}
+				}
 				replacements = append(replacements, xk6.NewReplace(mod, repl))
 			}
 
@@ -139,9 +146,9 @@ func runBuild(ctx context.Context, args []string) error {
 
 func getK6OutputFile() string {
 	if runtime.GOOS == "windows" {
-		return "k6.exe"
+		return ".\\k6.exe"
 	}
-	return "k6"
+	return "./k6"
 }
 
 func runDev(ctx context.Context, args []string) error {
@@ -175,7 +182,7 @@ func runDev(ctx context.Context, args []string) error {
 	// and since this tool is a carry-through for the user's actual
 	// go.mod, we need to transfer their replace directives through
 	// to the one we're making
-	cmd = exec.Command("go", "list", "-m", "-f={{if .Replace}}{{.Path}} => {{.Replace}}{{end}}", "all")
+	cmd = exec.Command("go", "list", "-mod=readonly", "-m", "-f={{if .Replace}}{{.Path}} => {{.Replace}}{{end}}", "all")
 	cmd.Stderr = os.Stderr
 	out, err = cmd.Output()
 	if err != nil {
