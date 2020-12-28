@@ -64,6 +64,15 @@ $ xcaddy build \
     --with github.com/caddyserver/ntlm-transport@v0.1.1=../../my-fork
 ```
 
+You can even replace Caddy core using the `--with` flag:
+
+```
+$ xcaddy build \
+    --with github.com/caddyserver/caddy/v2=../../my-caddy-fork
+```
+
+This allows you to hack on Caddy core (and optionally plug in extra modules at the same time!) with relative ease.
+
 ### For plugin development
 
 If you run `xcaddy` from within the folder of the Caddy plugin you're working on _without the `build` subcommand_, it will build Caddy with your current module and run it, as if you manually plugged it in and invoked `go run`.

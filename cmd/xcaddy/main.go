@@ -141,7 +141,7 @@ func getCaddyOutputFile() string {
 	if runtime.GOOS == "windows" {
 		return "caddy.exe"
 	}
-	return "caddy"
+	return "." + string(filepath.Separator) + "caddy"
 }
 
 func runDev(ctx context.Context, args []string) error {
