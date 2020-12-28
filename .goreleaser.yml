@@ -56,6 +56,22 @@ archives:
 checksum:
   algorithm: sha512
 
+nfpms:
+  - id: default
+    package_name: xcaddy
+
+    vendor: Light Code Labs
+    homepage: https://caddyserver.com
+    maintainer: Matthew Holt <mholt@users.noreply.github.com>
+    description: |
+      Build Caddy with plugins
+    license: Apache 2.0
+
+    formats:
+      - deb
+      # - rpm
+
+    bindir: /usr/bin
 
 release:
   github:
