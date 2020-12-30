@@ -93,6 +93,6 @@ jobs:
             continue
           fi
 
-          echo "Pushing $filename to 'testing'"
+          echo "Pushing $filename to 'xcaddy'"
           cloudsmith push deb caddy/xcaddy/any-distro/any-version $filename
         done
