@@ -17,10 +17,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
-        go-version: [ 1.14.x ]
+        go: [ '1.14', '1.15' ]
 
         # Set some variables per OS, usable via ${{ matrix.VAR }}
-        # XCADDY_BIN_PATH: the path to the compiled Caddy binary, for artifact publishing
+        # XCADDY_BIN_PATH: the path to the compiled xcaddy binary, for artifact publishing
         # SUCCESS: the typical value for $? per OS (Windows/pwsh returns 'True')
         include:
         - os: ubuntu-latest
@@ -39,9 +39,9 @@ jobs:
 
     steps:
     - name: Install Go
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v2
       with:
-        go-version: ${{ matrix.go-version }}
+        go-version: ${{ matrix.go }}
 
     - name: Checkout code
       uses: actions/checkout@v2
@@ -60,18 +60,18 @@ jobs:
         echo "::set-output name=go_cache::$(go env GOCACHE)"
 
     - name: Cache the build cache
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
         path: ${{ steps.vars.outputs.go_cache }}
-        key: ${{ runner.os }}-go-ci-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-${{ matrix.go }}-go-ci-${{ hashFiles('**/go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-go-ci
+          ${{ runner.os }}-${{ matrix.go }}-go-ci
 
     - name: Get dependencies
       run: |
         go get -v -t -d ./...
 
-    - name: Build xCaddy
+    - name: Build xcaddy
       working-directory: ./cmd/xcaddy
       env:
         CGO_ENABLED: 0
@@ -81,7 +81,7 @@ jobs:
     - name: Publish Build Artifact
       uses: actions/upload-artifact@v1
       with:
-        name: xcaddy_${{ runner.os }}_${{ steps.vars.outputs.short_sha }}
+        name: xcaddy_${{ runner.os }}_go${{ matrix.go }}_${{ steps.vars.outputs.short_sha }}
         path: ${{ matrix.XCADDY_BIN_PATH }}
 
     - name: Run tests
@@ -107,7 +107,7 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
-      - uses: goreleaser/goreleaser-action@v1
+      - uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
           args: check
