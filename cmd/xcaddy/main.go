@@ -175,7 +175,7 @@ func runDev(ctx context.Context, args []string) error {
 	// and since this tool is a carry-through for the user's actual
 	// go.mod, we need to transfer their replace directives through
 	// to the one we're making
-	cmd = exec.Command("go", "list", "-m", "-f={{if .Replace}}{{.Path}} => {{.Replace}}{{end}}", "all")
+	cmd = exec.Command("go", "list", "-m", "-f={{if .Replace}}{{.Path}}=>{{.Replace}}{{end}}", "all")
 	cmd.Stderr = os.Stderr
 	out, err = cmd.Output()
 	if err != nil {
@@ -186,10 +186,14 @@ func runDev(ctx context.Context, args []string) error {
 		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 			continue
 		}
-		replacements = append(replacements, xcaddy.NewReplace(
-			strings.TrimSpace(parts[0]),
-			strings.TrimSpace(parts[1]),
-		))
+
+		// adjust relative replacements in original module since our temporary module is in a different directory
+		if !filepath.IsAbs(parts[1]) {
+			parts[1] = filepath.Join(moduleDir, parts[1])
+			log.Printf("[INFO] Resolved relative replacement %s to %s", line, parts[1])
+		}
+
+		replacements = append(replacements, xcaddy.NewReplace(parts[0], parts[1]))
 	}
 
 	// reconcile remaining path segments; for example if a module foo/a
