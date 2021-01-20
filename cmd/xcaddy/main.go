@@ -223,6 +223,16 @@ func runDev(ctx context.Context, args []string) error {
 		return err
 	}
 
+	if os.Getenv("XCADDY_SETCAP") == "1" {
+		cmd = exec.Command("sudo", "setcap", "cap_net_bind_service=+ep", binOutput)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		log.Printf("[INFO] Setting capabilities (requires admin privileges): %v", cmd.Args)
+		if err = cmd.Run(); err != nil {
+			return err
+		}
+	}
+
 	log.Printf("[INFO] Running %v\n\n", append([]string{binOutput}, args...))
 
 	cmd = exec.Command(binOutput, args...)
