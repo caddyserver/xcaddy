@@ -42,6 +42,7 @@ type Builder struct {
 	TimeoutBuild time.Duration `json:"timeout_build,omitempty"`
 	RaceDetector bool          `json:"race_detector,omitempty"`
 	SkipCleanup  bool          `json:"skip_cleanup,omitempty"`
+	SkipBuild    bool          `json:"skip_build,omitempty"`
 }
 
 // Build builds Caddy at the configured version with the
@@ -76,6 +77,12 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 		return err
 	}
 	defer buildEnv.Close()
+
+	if b.SkipBuild {
+		log.Printf("[INFO] Skipping build as requested")
+
+		return nil
+	}
 
 	// prepare the environment for the go command; for
 	// the most part we want it to inherit our current

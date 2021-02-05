@@ -124,8 +124,9 @@ Because the subcommands and flags are constrained to benefit rapid plugin protot
 
 - `CADDY_VERSION` sets the version of Caddy to build.
 - `XCADDY_RACE_DETECTOR=1` enables the Go race detector in the build.
-- `XCADDY_SKIP_CLEANUP=1` causes xcaddy to leave build artifacts on disk after exiting.
 - `XCADDY_SETCAP=1` will run `sudo setcap cap_net_bind_service=+ep` on the temporary binary before running it when in dev mode.
+- `XCADDY_SKIP_BUILD=1` causes xcaddy to not compile the program, it is used in conjunction with build tools such as [GoReleaser](https://goreleaser.com). Implies `XCADDY_SKIP_CLEANUP=1`.
+- `XCADDY_SKIP_CLEANUP=1` causes xcaddy to leave build artifacts on disk after exiting.
 
 ---
 
