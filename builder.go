@@ -92,6 +92,10 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 
 	log.Println("[INFO] Building Caddy")
 
+	// tidy the module to ensure go.mod and go.sum are consistent with the module prereq
+	tidyCmd := buildEnv.newCommand("go", "mod", "tidy")
+	buildEnv.runCommand(ctx, tidyCmd, b.TimeoutGet)
+
 	// compile
 	cmd := buildEnv.newCommand("go", "build",
 		"-o", absOutputFile,
