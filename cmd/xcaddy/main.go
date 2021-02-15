@@ -75,6 +75,14 @@ func runBuild(ctx context.Context, args []string) error {
 				Version:     ver,
 			})
 			if repl != "" {
+				// adjust relative replacements in current working directory since our temporary module is in a different directory
+				if !filepath.IsAbs(repl) {
+					repl, err = filepath.Abs(repl)
+					if err != nil {
+						log.Fatalf("[FATAL] %v", err)
+					}
+					log.Printf("[INFO] Resolved relative replacement %s to %s", args[i], repl)
+				}
 				replacements = append(replacements, xcaddy.NewReplace(mod, repl))
 			}
 
