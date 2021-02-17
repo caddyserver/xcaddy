@@ -23,7 +23,7 @@ You may also build `xcaddy` from source:
 $ go get -u github.com/caddyserver/xcaddy/cmd/xcaddy
 ```
 
-For Debian, Ubuntu and Raspbian users, an `xcaddy` package is available from our [Cloudsmith repo](https://cloudsmith.io/~caddy/repos/xcaddy/packages/):
+For Debian, Ubuntu and Raspbian, an `xcaddy` package is available from our [Cloudsmith repo](https://cloudsmith.io/~caddy/repos/xcaddy/packages/):
 
 ```bash
 sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
