@@ -15,12 +15,23 @@ Stay updated, be aware of changes, and please submit feedback! Thanks!
 
 ## Install
 
-You can [download binaries](https://github.com/caddyserver/xcaddy/releases) that are already compiled for your platform, or build `xcaddy` from source:
+You can [download binaries](https://github.com/caddyserver/xcaddy/releases) that are already compiled for your platform from the Release tab. 
+
+You may also build `xcaddy` from source:
 
 ```bash
 $ go get -u github.com/caddyserver/xcaddy/cmd/xcaddy
 ```
 
+For Debian, Ubuntu and Raspbian, an `xcaddy` package is available from our [Cloudsmith repo](https://cloudsmith.io/~caddy/repos/xcaddy/packages/):
+
+```bash
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/xcaddy/gpg.key' | sudo apt-key add -
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/xcaddy/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-xcaddy.list
+sudo apt update
+sudo apt install xcaddy
+```
 
 ## Command usage
 
