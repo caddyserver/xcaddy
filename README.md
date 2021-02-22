@@ -20,10 +20,10 @@ You can [download binaries](https://github.com/caddyserver/xcaddy/releases) that
 You may also build `xcaddy` from source:
 
 ```bash
-$ go get -u github.com/caddyserver/xcaddy/cmd/xcaddy
+$ go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 ```
 
-For Debian, Ubuntu and Raspbian, an `xcaddy` package is available from our [Cloudsmith repo](https://cloudsmith.io/~caddy/repos/xcaddy/packages/):
+For Debian, Ubuntu, and Raspbian, an `xcaddy` package is available from our [Cloudsmith repo](https://cloudsmith.io/~caddy/repos/xcaddy/packages/):
 
 ```bash
 sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
