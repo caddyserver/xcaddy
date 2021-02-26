@@ -76,7 +76,7 @@ func runBuild(ctx context.Context, args []string) error {
 			})
 			if repl != "" {
 				// adjust relative replacements in current working directory since our temporary module is in a different directory
-				if !filepath.IsAbs(repl) {
+				if strings.HasPrefix(repl, ".") {
 					repl, err = filepath.Abs(repl)
 					if err != nil {
 						log.Fatalf("[FATAL] %v", err)
@@ -288,9 +288,13 @@ func trapSignals(ctx context.Context, cancel context.CancelFunc) {
 func splitWith(arg string) (module, version, replace string, err error) {
 	const versionSplit, replaceSplit = "@", "="
 
-	parts := strings.SplitN(arg, versionSplit, 2)
-	module = parts[0]
+	modules := strings.SplitN(arg, replaceSplit, 2)
+	if len(modules) > 1 {
+		replace = modules[1]
+	}
 
+	parts := strings.SplitN(modules[0], versionSplit, 2)
+	module = parts[0]
 	if len(parts) == 1 {
 		parts := strings.SplitN(module, replaceSplit, 2)
 		if len(parts) > 1 {
