@@ -76,7 +76,7 @@ func runBuild(ctx context.Context, args []string) error {
 			})
 			if repl != "" {
 				// adjust relative replacements in current working directory since our temporary module is in a different directory
-				if strings.HasPrefix(repl, ".") && !filepath.IsAbs(repl) {
+				if strings.HasPrefix(repl, ".") {
 					repl, err = filepath.Abs(repl)
 					if err != nil {
 						log.Fatalf("[FATAL] %v", err)
