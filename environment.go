@@ -155,6 +155,16 @@ nextPlugin:
 		}
 	}
 
+	// Running "go get" on plugins may cause the version of Caddy to be
+	// bumped unintentionally if any of the plugins specify a newer version
+	// of Caddy, so we need to "go get" Caddy again to make sure we will
+	// actually build the version of Caddy we want.
+	log.Println("[INFO] Enforcing Caddy version")
+	err = env.execGoGet(ctx, caddyModulePath, env.caddyVersion)
+	if err != nil {
+		return nil, err
+	}
+
 	log.Println("[INFO] Build environment ready")
 
 	return env, nil
