@@ -97,7 +97,7 @@ The race detector can be enabled by setting `XK6_RACE_DETECTOR=1`.
 ```go
 builder := xk6.Builder{
 	k6Version: "v0.29.0",
-	Plugins: []xk6.Dependency{
+	Extensions: []xk6.Dependency{
 		{
 			ModulePath: "github.com/k6io/xk6-sql",
 			Version:    "v0.0.1",

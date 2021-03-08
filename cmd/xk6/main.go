@@ -55,7 +55,7 @@ func main() {
 func runBuild(ctx context.Context, args []string) error {
 	// parse the command line args... rather primitively
 	var argK6Version, output string
-	var plugins []xk6.Dependency
+	var extensions []xk6.Dependency
 	var replacements []xk6.Replace
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -69,7 +69,7 @@ func runBuild(ctx context.Context, args []string) error {
 				return err
 			}
 			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
-			plugins = append(plugins, xk6.Dependency{
+			extensions = append(extensions, xk6.Dependency{
 				PackagePath: mod,
 				Version:     ver,
 			})
@@ -115,7 +115,7 @@ func runBuild(ctx context.Context, args []string) error {
 			Cgo: os.Getenv("CGO_ENABLED") == "1",
 		},
 		K6Version:    k6Version,
-		Plugins:      plugins,
+		Extensions:   extensions,
 		Replacements: replacements,
 		RaceDetector: raceDetector,
 		SkipCleanup:  skipCleanup,
@@ -214,7 +214,7 @@ func runDev(ctx context.Context, args []string) error {
 			Cgo: os.Getenv("CGO_ENABLED") == "1",
 		},
 		K6Version: k6Version,
-		Plugins: []xk6.Dependency{
+		Extensions: []xk6.Dependency{
 			{PackagePath: importPath},
 		},
 		Replacements: replacements,

@@ -36,7 +36,7 @@ import (
 type Builder struct {
 	Compile
 	K6Version    string        `json:"k6_version,omitempty"`
-	Plugins      []Dependency  `json:"plugins,omitempty"`
+	Extensions   []Dependency  `json:"extensions,omitempty"`
 	Replacements []Replace     `json:"replacements,omitempty"`
 	TimeoutGet   time.Duration `json:"timeout_get,omitempty"`
 	TimeoutBuild time.Duration `json:"timeout_build,omitempty"`
@@ -45,7 +45,7 @@ type Builder struct {
 }
 
 // Build builds k6 at the configured version with the
-// configured plugins and plops down a binary at outputFile.
+// configured extensions and writes a binary at outputFile.
 func (b Builder) Build(ctx context.Context, outputFile string) error {
 	if outputFile == "" {
 		return fmt.Errorf("output file path is required")

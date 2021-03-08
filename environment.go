@@ -35,8 +35,8 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	}
 
 	// clean up any SIV-incompatible module paths real quick
-	for i, p := range b.Plugins {
-		b.Plugins[i].PackagePath, err = versionedModulePath(p.PackagePath, p.Version)
+	for i, p := range b.Extensions {
+		b.Extensions[i].PackagePath, err = versionedModulePath(p.PackagePath, p.Version)
 		if err != nil {
 			return nil, err
 		}
@@ -46,8 +46,8 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	tplCtx := goModTemplateContext{
 		K6Module: k6ModulePath,
 	}
-	for _, p := range b.Plugins {
-		tplCtx.Plugins = append(tplCtx.Plugins, p.PackagePath)
+	for _, p := range b.Extensions {
+		tplCtx.Extensions = append(tplCtx.Extensions, p.PackagePath)
 	}
 
 	// evaluate the template for the main module
@@ -86,7 +86,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	env := &environment{
 		k6Version:    b.K6Version,
-		plugins:      b.Plugins,
+		extensions:   b.Extensions,
 		k6ModulePath: k6ModulePath,
 		tempFolder:   tempFolder,
 		timeoutGoGet: b.TimeoutGet,
@@ -121,21 +121,21 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	default:
 	}
 
-	// pin versions by populating go.mod, first for k6 itself and then plugins
+	// pin versions by populating go.mod, first for k6 itself and then extensions
 	log.Println("[INFO] Pinning versions")
 	err = env.execGoGet(ctx, k6ModulePath, env.k6Version)
 	if err != nil {
 		return nil, err
 	}
-nextPlugin:
-	for _, p := range b.Plugins {
+nextExt:
+	for _, p := range b.Extensions {
 		// if module is locally available, do not "go get" it;
 		// also note that we iterate and check prefixes, because
-		// a plugin package may be a subfolder of a module, i.e.
-		// foo/a/plugin is within module foo/a.
+		// an extension package may be a subfolder of a module, i.e.
+		// foo/a/extension is within module foo/a.
 		for repl := range replaced {
 			if strings.HasPrefix(p.PackagePath, repl) {
-				continue nextPlugin
+				continue nextExt
 			}
 		}
 		err = env.execGoGet(ctx, p.PackagePath, p.Version)
@@ -157,7 +157,7 @@ nextPlugin:
 
 type environment struct {
 	k6Version    string
-	plugins      []Dependency
+	extensions   []Dependency
 	k6ModulePath string
 	tempFolder   string
 	timeoutGoGet time.Duration
@@ -239,8 +239,8 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion 
 }
 
 type goModTemplateContext struct {
-	K6Module string
-	Plugins  []string
+	K6Module   string
+	Extensions []string
 }
 
 const mainModuleTemplate = `package main
@@ -251,7 +251,7 @@ import (
 	// plug in k6 modules here
 	// TODO: Create /modules/standard dir structure?
 	// _ "{{.K6Module}}/modules/standard"
-	{{- range .Plugins}}
+	{{- range .Extensions}}
 	_ "{{.}}"
 	{{- end}}
 )
