@@ -29,6 +29,13 @@ import (
 )
 
 func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
+	// if the version isn't set, use "latest" so we default to latest stable.
+	// necessary to ensure the Caddy core version is properly downgraded.
+	// see "Pinning Caddy version" part below
+	if b.CaddyVersion == "" {
+		b.CaddyVersion = "latest"
+	}
+
 	// assume Caddy v2 if no semantic version is provided
 	caddyModulePath := defaultCaddyModulePath
 	if !strings.HasPrefix(b.CaddyVersion, "v") || !strings.Contains(b.CaddyVersion, ".") {
@@ -126,12 +133,8 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	default:
 	}
 
-	// pin versions by populating go.mod, first for Caddy itself and then plugins
-	log.Println("[INFO] Pinning versions")
-	err = env.execGoGet(ctx, caddyModulePath, env.caddyVersion)
-	if err != nil {
-		return nil, err
-	}
+	// pin versions by populating go.mod with all the plugins
+	log.Println("[INFO] Pinning plugin versions")
 nextPlugin:
 	for _, p := range b.Plugins {
 		// if module is locally available, do not "go get" it;
@@ -157,9 +160,9 @@ nextPlugin:
 
 	// Running "go get" on plugins may cause the version of Caddy to be
 	// bumped unintentionally if any of the plugins specify a newer version
-	// of Caddy, so we need to "go get" Caddy again to make sure we will
+	// of Caddy, so we need to "go get" Caddy last to make sure we will
 	// actually build the version of Caddy we want.
-	log.Println("[INFO] Enforcing Caddy version")
+	log.Println("[INFO] Pinning Caddy version")
 	err = env.execGoGet(ctx, caddyModulePath, env.caddyVersion)
 	if err != nil {
 		return nil, err
