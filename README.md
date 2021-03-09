@@ -65,6 +65,16 @@ $ xk6 build \
 
 $ xk6 build \
     --with github.com/k6io/xk6-sql@v0.0.1=../../my-fork
+
+# Build using a k6 fork repository. Note that a version is required if
+# XK6_K6_REPO is a URI.
+$ XK6_K6_REPO=github.com/example/k6 xk6 build master \
+    --with github.com/k6io/xk6-sql
+
+# Build using a k6 fork repository from a local path. The version must be omitted
+# and the path must be absolute.
+$ XK6_K6_REPO="$PWD/../../k6" xk6 build \
+    --with github.com/k6io/xk6-sql
 ```
 
 ### For extension development
@@ -118,6 +128,7 @@ Because the subcommands and flags are constrained to benefit rapid extension pro
 - `K6_VERSION` sets the version of k6 to build.
 - `XK6_RACE_DETECTOR=1` enables the Go race detector in the build.
 - `XK6_SKIP_CLEANUP=1` causes xk6 to leave build artifacts on disk after exiting.
+- `XK6_K6_REPO` optionally sets the path to the main k6 repository. This is useful when building with k6 forks.
 
 
 ---

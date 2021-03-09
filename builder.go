@@ -35,6 +35,7 @@ import (
 // configuration it represents.
 type Builder struct {
 	Compile
+	K6Repo       string        `json:"k6_repo,omitempty"`
 	K6Version    string        `json:"k6_version,omitempty"`
 	Extensions   []Dependency  `json:"extensions,omitempty"`
 	Replacements []Replace     `json:"replacements,omitempty"`

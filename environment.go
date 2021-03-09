@@ -123,9 +123,28 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// pin versions by populating go.mod, first for k6 itself and then extensions
 	log.Println("[INFO] Pinning versions")
-	err = env.execGoGet(ctx, k6ModulePath, env.k6Version)
-	if err != nil {
-		return nil, err
+	if b.K6Repo == "" {
+		// building with the default main repo
+		err = env.execGoGet(ctx, k6ModulePath, env.k6Version)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// building with a forked repo, so get the main one and replace it with
+		// the fork
+		err = env.execGoGet(ctx, k6ModulePath, "")
+		if err != nil {
+			return nil, err
+		}
+		replace := fmt.Sprintf("%s=%s", k6ModulePath, b.K6Repo)
+		if b.K6Version != "" {
+			replace = fmt.Sprintf("%s@%s", replace, b.K6Version)
+		}
+		cmd = env.newCommand("go", "mod", "edit", "-replace", replace)
+		err = env.runCommand(ctx, cmd, 10*time.Second)
+		if err != nil {
+			return nil, err
+		}
 	}
 nextExt:
 	for _, p := range b.Extensions {

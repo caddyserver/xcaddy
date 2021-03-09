@@ -31,6 +31,7 @@ import (
 
 var (
 	k6Version    = os.Getenv("K6_VERSION")
+	k6Repo       = os.Getenv("XK6_K6_REPO")
 	raceDetector = os.Getenv("XK6_RACE_DETECTOR") == "1"
 	skipCleanup  = os.Getenv("XK6_SKIP_CLEANUP") == "1"
 )
@@ -114,6 +115,7 @@ func runBuild(ctx context.Context, args []string) error {
 		Compile: xk6.Compile{
 			Cgo: os.Getenv("CGO_ENABLED") == "1",
 		},
+		K6Repo:       k6Repo,
 		K6Version:    k6Version,
 		Extensions:   extensions,
 		Replacements: replacements,
