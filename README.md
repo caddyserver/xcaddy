@@ -1,7 +1,7 @@
 `xk6` - Custom k6 Builder
 ===============================
 
-This command line tool and associated Go package makes it easy to make custom builds of [k6](https://github.com/loadimpact/k6).
+This command line tool and associated Go package makes it easy to make custom builds of [k6](https://github.com/k6io/k6).
 
 It is used heavily by k6 extension developers as well as anyone who wishes to make custom `k6` binaries (with or without extensions).
 
