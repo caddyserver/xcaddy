@@ -257,5 +257,5 @@ const (
 	// used for temporary folder paths.
 	yearMonthDayHourMin = "2006-01-02-1504"
 
-	defaultK6ModulePath = "github.com/k6io/k6"
+	defaultK6ModulePath = "github.com/loadimpact/k6"
 )
