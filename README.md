@@ -18,7 +18,7 @@ Stay updated, be aware of changes, and please submit feedback! Thanks!
 You can [download binaries](https://github.com/k6io/xk6/releases) that are already compiled for your platform, or build `xk6` from source:
 
 ```bash
-$ go get -u github.com/k6io/xk6/cmd/xk6
+$ go install github.com/k6io/xk6/cmd/xk6@latest
 ```
 
 
