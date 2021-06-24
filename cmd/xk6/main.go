@@ -215,6 +215,7 @@ func runDev(ctx context.Context, args []string) error {
 		Compile: xk6.Compile{
 			Cgo: os.Getenv("CGO_ENABLED") == "1",
 		},
+		K6Repo:    k6Repo,
 		K6Version: k6Version,
 		Extensions: []xk6.Dependency{
 			{PackagePath: importPath},
