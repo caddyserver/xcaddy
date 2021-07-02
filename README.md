@@ -57,7 +57,7 @@ $ xcaddy build [<caddy_version>]
 - `<caddy_version>` is the core Caddy version to build; defaults to `CADDY_VERSION` env variable or latest.
 - `--output` changes the output file.
 - `--with` can be used multiple times to add plugins by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional.
-- `--debug` can be used to build an output with DWARF debug information turns on.
+- `--debug` can be used to build an output with DWARF debug information turned on.
 
 Examples:
 
