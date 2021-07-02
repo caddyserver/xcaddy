@@ -1,5 +1,4 @@
-`xcaddy` - Custom Caddy Builder
-===============================
+# `xcaddy` - Custom Caddy Builder
 
 This command line tool and associated Go package makes it easy to make custom builds of the [Caddy Web Server](https://github.com/caddyserver/caddy).
 
@@ -15,7 +14,7 @@ Stay updated, be aware of changes, and please submit feedback! Thanks!
 
 ## Install
 
-You can [download binaries](https://github.com/caddyserver/xcaddy/releases) that are already compiled for your platform from the Release tab. 
+You can [download binaries](https://github.com/caddyserver/xcaddy/releases) that are already compiled for your platform from the Release tab.
 
 You may also build `xcaddy` from source:
 
@@ -44,7 +43,6 @@ The `xcaddy` command will use the latest version of Caddy by default. You can cu
 
 As usual with `go` command, the `xcaddy` command will pass the `GOOS`, `GOARCH`, and `GOARM` environment variables through for cross-compilation.
 
-
 ### Custom builds
 
 Syntax:
@@ -53,11 +51,13 @@ Syntax:
 $ xcaddy build [<caddy_version>]
     [--output <file>]
     [--with <module[@version][=replacement]>...]
+    [--debug]
 ```
 
 - `<caddy_version>` is the core Caddy version to build; defaults to `CADDY_VERSION` env variable or latest.
 - `--output` changes the output file.
 - `--with` can be used multiple times to add plugins by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional.
+- `--debug` can be used to build an output with DWARF debug information turns on.
 
 Examples:
 
@@ -97,6 +97,7 @@ Syntax:
 ```
 $ xcaddy <args...>
 ```
+
 - `<args...>` are passed through to the `caddy` command.
 
 For example:
@@ -108,7 +109,6 @@ $ xcaddy run --config caddy.json
 ```
 
 The race detector can be enabled by setting `XCADDY_RACE_DETECTOR=1`.
-
 
 ## Library usage
 
@@ -126,8 +126,6 @@ err := builder.Build(context.Background(), "./caddy")
 ```
 
 Versions can be anything compatible with `go get`.
-
-
 
 ## Environment variables
 
