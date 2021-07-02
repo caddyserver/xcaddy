@@ -43,6 +43,7 @@ type Builder struct {
 	RaceDetector bool          `json:"race_detector,omitempty"`
 	SkipCleanup  bool          `json:"skip_cleanup,omitempty"`
 	SkipBuild    bool          `json:"skip_build,omitempty"`
+	Debug        bool          `json:"debug,omitempty"`
 }
 
 // Build builds Caddy at the configured version with the
@@ -108,9 +109,14 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	// compile
 	cmd := buildEnv.newCommand("go", "build",
 		"-o", absOutputFile,
-		"-ldflags", "-w -s", // trim debug symbols
-		"-trimpath",
 	)
+	if !b.Debug {
+		cmd.Args = append(cmd.Args,
+			"-ldflags", "-w -s", // trim debug symbols
+			"-trimpath",
+		)
+	}
+
 	if b.RaceDetector {
 		cmd.Args = append(cmd.Args, "-race")
 	}

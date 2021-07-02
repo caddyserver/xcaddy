@@ -55,9 +55,13 @@ func main() {
 
 func runBuild(ctx context.Context, args []string) error {
 	// parse the command line args... rather primitively
-	var argCaddyVersion, output string
-	var plugins []xcaddy.Dependency
-	var replacements []xcaddy.Replace
+	var (
+		argCaddyVersion, output string
+		buildDebugVersion       bool
+		plugins                 []xcaddy.Dependency
+		replacements            []xcaddy.Replace
+	)
+
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--with":
@@ -93,6 +97,9 @@ func runBuild(ctx context.Context, args []string) error {
 			i++
 			output = args[i]
 
+		case "--debug":
+			buildDebugVersion = true
+
 		default:
 			if argCaddyVersion != "" {
 				return fmt.Errorf("missing flag; caddy version already set at %s", argCaddyVersion)
@@ -122,6 +129,7 @@ func runBuild(ctx context.Context, args []string) error {
 		RaceDetector: raceDetector,
 		SkipBuild:    skipBuild,
 		SkipCleanup:  skipCleanup,
+		Debug:        buildDebugVersion,
 	}
 	err := builder.Build(ctx, output)
 	if err != nil {
