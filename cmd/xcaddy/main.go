@@ -57,7 +57,7 @@ func runBuild(ctx context.Context, args []string) error {
 	// parse the command line args... rather primitively
 	var (
 		argCaddyVersion, output string
-		buildDebugVersion       bool
+		buildDebugOutput        bool
 		plugins                 []xcaddy.Dependency
 		replacements            []xcaddy.Replace
 	)
@@ -98,7 +98,7 @@ func runBuild(ctx context.Context, args []string) error {
 			output = args[i]
 
 		case "--debug":
-			buildDebugVersion = true
+			buildDebugOutput = true
 
 		default:
 			if argCaddyVersion != "" {
@@ -129,7 +129,7 @@ func runBuild(ctx context.Context, args []string) error {
 		RaceDetector: raceDetector,
 		SkipBuild:    skipBuild,
 		SkipCleanup:  skipCleanup,
-		Debug:        buildDebugVersion,
+		Debug:        buildDebugOutput,
 	}
 	err := builder.Build(ctx, output)
 	if err != nil {
