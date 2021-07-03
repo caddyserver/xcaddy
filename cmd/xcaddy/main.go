@@ -30,10 +30,11 @@ import (
 )
 
 var (
-	caddyVersion = os.Getenv("CADDY_VERSION")
-	raceDetector = os.Getenv("XCADDY_RACE_DETECTOR") == "1"
-	skipBuild    = os.Getenv("XCADDY_SKIP_BUILD") == "1"
-	skipCleanup  = os.Getenv("XCADDY_SKIP_CLEANUP") == "1"
+	caddyVersion     = os.Getenv("CADDY_VERSION")
+	raceDetector     = os.Getenv("XCADDY_RACE_DETECTOR") == "1"
+	skipBuild        = os.Getenv("XCADDY_SKIP_BUILD") == "1"
+	skipCleanup      = os.Getenv("XCADDY_SKIP_CLEANUP") == "1"
+	buildDebugOutput = os.Getenv("XCADDY_DEBUG") == "1"
 )
 
 func main() {
@@ -55,12 +56,9 @@ func main() {
 
 func runBuild(ctx context.Context, args []string) error {
 	// parse the command line args... rather primitively
-	var (
-		argCaddyVersion, output string
-		buildDebugOutput        bool
-		plugins                 []xcaddy.Dependency
-		replacements            []xcaddy.Replace
-	)
+	var argCaddyVersion, output string
+	var plugins []xcaddy.Dependency
+	var replacements []xcaddy.Replace
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -96,9 +94,6 @@ func runBuild(ctx context.Context, args []string) error {
 			}
 			i++
 			output = args[i]
-
-		case "--debug":
-			buildDebugOutput = true
 
 		default:
 			if argCaddyVersion != "" {
@@ -236,6 +231,7 @@ func runDev(ctx context.Context, args []string) error {
 		RaceDetector: raceDetector,
 		SkipBuild:    skipBuild,
 		SkipCleanup:  skipCleanup,
+		Debug:        buildDebugOutput,
 	}
 	err = builder.Build(ctx, binOutput)
 	if err != nil {
