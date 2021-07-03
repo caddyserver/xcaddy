@@ -59,7 +59,6 @@ func runBuild(ctx context.Context, args []string) error {
 	var argCaddyVersion, output string
 	var plugins []xcaddy.Dependency
 	var replacements []xcaddy.Replace
-
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--with":
