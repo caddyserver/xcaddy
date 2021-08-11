@@ -66,9 +66,17 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	if err != nil {
 		return nil, err
 	}
+	env := &environment{
+		k6Version:    b.K6Version,
+		extensions:   b.Extensions,
+		k6ModulePath: k6ModulePath,
+		tempFolder:   tempFolder,
+		timeoutGoGet: b.TimeoutGet,
+		skipCleanup:  b.SkipCleanup,
+	}
 	defer func() {
 		if err != nil {
-			err2 := os.RemoveAll(tempFolder)
+			err2 := env.Close()
 			if err2 != nil {
 				err = fmt.Errorf("%w; additionally, cleaning up folder: %v", err, err2)
 			}
@@ -82,15 +90,6 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	err = ioutil.WriteFile(mainPath, buf.Bytes(), 0644)
 	if err != nil {
 		return nil, err
-	}
-
-	env := &environment{
-		k6Version:    b.K6Version,
-		extensions:   b.Extensions,
-		k6ModulePath: k6ModulePath,
-		tempFolder:   tempFolder,
-		timeoutGoGet: b.TimeoutGet,
-		skipCleanup:  b.SkipCleanup,
 	}
 
 	// initialize the go module
