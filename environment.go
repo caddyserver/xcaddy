@@ -66,9 +66,17 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	if err != nil {
 		return nil, err
 	}
+	env := &environment{
+		k6Version:    b.K6Version,
+		extensions:   b.Extensions,
+		k6ModulePath: k6ModulePath,
+		tempFolder:   tempFolder,
+		timeoutGoGet: b.TimeoutGet,
+		skipCleanup:  b.SkipCleanup,
+	}
 	defer func() {
 		if err != nil {
-			err2 := os.RemoveAll(tempFolder)
+			err2 := env.Close()
 			if err2 != nil {
 				err = fmt.Errorf("%w; additionally, cleaning up folder: %v", err, err2)
 			}
@@ -82,15 +90,6 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	err = ioutil.WriteFile(mainPath, buf.Bytes(), 0644)
 	if err != nil {
 		return nil, err
-	}
-
-	env := &environment{
-		k6Version:    b.K6Version,
-		extensions:   b.Extensions,
-		k6ModulePath: k6ModulePath,
-		tempFolder:   tempFolder,
-		timeoutGoGet: b.TimeoutGet,
-		skipCleanup:  b.SkipCleanup,
 	}
 
 	// initialize the go module
@@ -125,14 +124,14 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	log.Println("[INFO] Pinning versions")
 	if b.K6Repo == "" {
 		// building with the default main repo
-		err = env.execGoGet(ctx, k6ModulePath, env.k6Version)
+		err = env.execGoModRequire(ctx, k6ModulePath, env.k6Version)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		// building with a forked repo, so get the main one and replace it with
 		// the fork
-		err = env.execGoGet(ctx, k6ModulePath, "")
+		err = env.execGoModRequire(ctx, k6ModulePath, "")
 		if err != nil {
 			return nil, err
 		}
@@ -157,7 +156,7 @@ nextExt:
 				continue nextExt
 			}
 		}
-		err = env.execGoGet(ctx, p.PackagePath, p.Version)
+		err = env.execGoModRequire(ctx, p.PackagePath, p.Version)
 		if err != nil {
 			return nil, err
 		}
@@ -248,12 +247,14 @@ func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd, timeout ti
 	}
 }
 
-func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion string) error {
+func (env environment) execGoModRequire(ctx context.Context, modulePath, moduleVersion string) error {
 	mod := modulePath
 	if moduleVersion != "" {
 		mod += "@" + moduleVersion
+	} else {
+		mod += "@latest"
 	}
-	cmd := env.newCommand("go", "get", "-d", "-v", mod)
+	cmd := env.newCommand("go", "mod", "edit", "-require", mod)
 	return env.runCommand(ctx, cmd, env.timeoutGoGet)
 }
 
