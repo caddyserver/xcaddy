@@ -135,6 +135,11 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 		if err != nil {
 			return nil, err
 		}
+		// tidy the module to ensure go.mod will not have versions such as `latest`
+		tidyCmd := env.newCommand("go", "mod", "tidy")
+		if err := env.runCommand(ctx, tidyCmd, b.TimeoutGet); err != nil {
+			return nil, err
+		}
 		replace := fmt.Sprintf("%s=%s", k6ModulePath, b.K6Repo)
 		if b.K6Version != "" {
 			replace = fmt.Sprintf("%s@%s", replace, b.K6Version)
