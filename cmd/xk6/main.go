@@ -26,7 +26,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/k6io/xk6"
+	"go.k6.io/xk6"
 )
 
 var (
