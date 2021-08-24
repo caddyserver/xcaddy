@@ -1,7 +1,7 @@
 `xk6` - Custom k6 Builder
 ===============================
 
-This command line tool and associated Go package makes it easy to make custom builds of [k6](https://github.com/k6io/k6).
+This command line tool and associated Go package makes it easy to make custom builds of [k6](https://github.com/grafana/k6).
 
 It is used heavily by k6 extension developers as well as anyone who wishes to make custom `k6` binaries (with or without extensions).
 
@@ -15,10 +15,10 @@ Stay updated, be aware of changes, and please submit feedback! Thanks!
 
 ## Install
 
-You can [download binaries](https://github.com/k6io/xk6/releases) that are already compiled for your platform, or build `xk6` from source:
+You can [download binaries](https://github.com/grafana/xk6/releases) that are already compiled for your platform, or build `xk6` from source:
 
 ```bash
-$ go install github.com/k6io/xk6/cmd/xk6@latest
+$ go install go.k6.io/xk6/cmd/xk6@latest
 ```
 
 
