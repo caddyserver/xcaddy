@@ -135,11 +135,6 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 		if err != nil {
 			return nil, err
 		}
-		// tidy the module to ensure go.mod will not have versions such as `latest`
-		tidyCmd := env.newCommand("go", "mod", "tidy")
-		if err := env.runCommand(ctx, tidyCmd, b.TimeoutGet); err != nil {
-			return nil, err
-		}
 		replace := fmt.Sprintf("%s=%s", k6ModulePath, b.K6Repo)
 		if b.K6Version != "" {
 			replace = fmt.Sprintf("%s@%s", replace, b.K6Version)
@@ -260,7 +255,13 @@ func (env environment) execGoModRequire(ctx context.Context, modulePath, moduleV
 		mod += "@latest"
 	}
 	cmd := env.newCommand("go", "mod", "edit", "-require", mod)
-	return env.runCommand(ctx, cmd, env.timeoutGoGet)
+	err := env.runCommand(ctx, cmd, env.timeoutGoGet)
+	if err != nil {
+		return err
+	}
+	// tidy the module to ensure go.mod will not have versions such as `latest`
+	tidyCmd := env.newCommand("go", "mod", "tidy")
+	return env.runCommand(ctx, tidyCmd, env.timeoutGoGet)
 }
 
 type goModTemplateContext struct {
