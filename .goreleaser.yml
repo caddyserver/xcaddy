@@ -59,7 +59,7 @@ checksum:
 
 release:
   github:
-    owner: k6io
+    owner: grafana
     name: xk6
   draft: false
   prerelease: auto
