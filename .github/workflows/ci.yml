@@ -78,6 +78,10 @@ jobs:
       run: |
         go build -trimpath -ldflags="-w -s" -v
 
+    - name: Output version
+      run: |
+        ${{ matrix.XCADDY_BIN_PATH }} version
+
     - name: Publish Build Artifact
       uses: actions/upload-artifact@v1
       with:
@@ -107,6 +111,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+      - name: Create 'xcaddy-build'
+        run: mkdir -p xcaddy-build
       - uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
