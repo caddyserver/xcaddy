@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package xcaddycmd
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"strings"
 
 	"github.com/caddyserver/xcaddy"
@@ -37,7 +38,7 @@ var (
 	buildDebugOutput = os.Getenv("XCADDY_DEBUG") == "1"
 )
 
-func main() {
+func Main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go trapSignals(ctx, cancel)
@@ -46,6 +47,11 @@ func main() {
 		if err := runBuild(ctx, os.Args[2:]); err != nil {
 			log.Fatalf("[ERROR] %v", err)
 		}
+		return
+	}
+
+	if len(os.Args) > 1 && os.Args[1] == "version" {
+		fmt.Println(xcaddyVersion())
 		return
 	}
 
@@ -318,4 +324,43 @@ func splitWith(arg string) (module, version, replace string, err error) {
 	}
 
 	return
+}
+
+// xcaddyVersion returns a detailed version string, if available.
+func xcaddyVersion() string {
+	mod := goModule()
+	ver := mod.Version
+	if mod.Sum != "" {
+		ver += " " + mod.Sum
+	}
+	if mod.Replace != nil {
+		ver += " => " + mod.Replace.Path
+		if mod.Replace.Version != "" {
+			ver += "@" + mod.Replace.Version
+		}
+		if mod.Replace.Sum != "" {
+			ver += " " + mod.Replace.Sum
+		}
+	}
+	return ver
+}
+
+func goModule() *debug.Module {
+	mod := &debug.Module{}
+	mod.Version = "unknown"
+	bi, ok := debug.ReadBuildInfo()
+	if ok {
+		mod.Path = bi.Main.Path
+		// The recommended way to build xcaddy involves
+		// creating a separate main module, which
+		// TODO: track related Go issue: https://github.com/golang/go/issues/29228
+		// once that issue is fixed, we should just be able to use bi.Main... hopefully.
+		for _, dep := range bi.Deps {
+			if dep.Path == "github.com/caddyserver/xcaddy" {
+				return dep
+			}
+		}
+		return &bi.Main
+	}
+	return mod
 }
