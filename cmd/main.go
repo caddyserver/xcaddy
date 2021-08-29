@@ -16,6 +16,7 @@ package xcaddycmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -165,23 +166,20 @@ func getCaddyOutputFile() string {
 func runDev(ctx context.Context, args []string) error {
 	binOutput := getCaddyOutputFile()
 
-	// get current/main module name
-	cmd := exec.Command("go", "list", "-m")
+	// get current/main module name and the root directory of the main module
+	cmd := exec.Command("go", "list", "-m", "-json")
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
 	}
-	currentModule := strings.TrimSpace(string(out))
-
-	// get the root directory of the main module
-	cmd = exec.Command("go", "list", "-m", "-f={{.Dir}}")
-	cmd.Stderr = os.Stderr
-	out, err = cmd.Output()
+	var mainModule map[string]interface{}
+	err = json.Unmarshal(out, &mainModule)
 	if err != nil {
-		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
+		return fmt.Errorf("json parse error: %v", err)
 	}
-	moduleDir := strings.TrimSpace(string(out))
+	currentModule := mainModule["Path"].(string)
+	moduleDir := mainModule["Dir"].(string)
 
 	// make sure the module being developed is replaced
 	// so that the local copy is used
