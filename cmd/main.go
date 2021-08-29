@@ -15,9 +15,11 @@
 package xcaddycmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -191,25 +193,45 @@ func runDev(ctx context.Context, args []string) error {
 	// and since this tool is a carry-through for the user's actual
 	// go.mod, we need to transfer their replace directives through
 	// to the one we're making
-	cmd = exec.Command("go", "list", "-m", "-f={{if .Replace}}{{.Path}}=>{{.Replace}}{{end}}", "all")
+	cmd = exec.Command("go", "list", "-m", "-json", "all")
 	cmd.Stderr = os.Stderr
 	out, err = cmd.Output()
 	if err != nil {
 		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
 	}
-	for _, line := range strings.Split(string(out), "\n") {
-		parts := strings.Split(line, "=>")
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+	decoder := json.NewDecoder(bytes.NewReader(out))
+	for {
+		var mod map[string]interface{}
+		if err := decoder.Decode(&mod); err == io.EOF {
+			break
+		} else if err != nil {
+			return fmt.Errorf("json parse error: %v", err)
+		}
+		rep, ok := mod["Replace"].(map[string]interface{})
+		if !ok {
 			continue
 		}
 
-		// adjust relative replacements in original module since our temporary module is in a different directory
-		if !filepath.IsAbs(parts[1]) {
-			parts[1] = filepath.Join(moduleDir, parts[1])
-			log.Printf("[INFO] Resolved relative replacement %s to %s", line, parts[1])
+		srcPath := mod["Path"].(string)
+		srcVersion := mod["Version"].(string)
+		src := srcPath + "@" + srcVersion
+
+		// 1. Target is module, version is required in this case
+		// 2A. Target is absolute path
+		// 2B. Target is relative path, proper handling is required in this case
+		dstPath := rep["Path"].(string)
+		dstVersion, isTargetModule := rep["Version"].(string)
+		var dst string
+		if isTargetModule {
+			dst = dstPath + "@" + dstVersion
+		} else if filepath.IsAbs(dstPath) {
+			dst = dstPath
+		} else {
+			dst = filepath.Join(moduleDir, dstPath)
+			log.Printf("[INFO] Resolved relative replacement %s to %s", dstPath, dst)
 		}
 
-		replacements = append(replacements, xcaddy.NewReplace(parts[0], parts[1]))
+		replacements = append(replacements, xcaddy.NewReplace(src, dst))
 	}
 
 	// reconcile remaining path segments; for example if a module foo/a
