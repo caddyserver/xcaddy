@@ -169,20 +169,7 @@ func runDev(ctx context.Context, args []string) error {
 	binOutput := getCaddyOutputFile()
 
 	// get current/main module name and the root directory of the main module
-	cmd := exec.Command("go", "list", "-m", "-json")
-	cmd.Stderr = os.Stderr
-	out, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
-	}
-	var mainModule map[string]interface{}
-	err = json.Unmarshal(out, &mainModule)
-	if err != nil {
-		return fmt.Errorf("json parse error: %v", err)
-	}
-	currentModule := mainModule["Path"].(string)
-	moduleDir := mainModule["Dir"].(string)
-
+	//
 	// make sure the module being developed is replaced
 	// so that the local copy is used
 	//
@@ -190,13 +177,13 @@ func runDev(ctx context.Context, args []string) error {
 	// and since this tool is a carry-through for the user's actual
 	// go.mod, we need to transfer their replace directives through
 	// to the one we're making
-	cmd = exec.Command("go", "list", "-m", "-json", "all")
+	cmd := exec.Command("go", "list", "-m", "-json", "all")
 	cmd.Stderr = os.Stderr
-	out, err = cmd.Output()
+	out, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
 	}
-	replacements, err := parseGoListJson(currentModule, moduleDir, out)
+	currentModule, moduleDir, replacements, err := parseGoListJson(out)
 	if err != nil {
 		return fmt.Errorf("json parse error: %v", err)
 	}
@@ -264,19 +251,30 @@ func runDev(ctx context.Context, args []string) error {
 	return cmd.Wait()
 }
 
-func parseGoListJson(currentModule, moduleDir string, out []byte) ([]xcaddy.Replace, error) {
-	replacements := []xcaddy.Replace{
-		xcaddy.NewReplace(currentModule, moduleDir),
-	}
+func parseGoListJson(out []byte) (currentModule, moduleDir string, replacements []xcaddy.Replace, err error) {
+	var unjoinedReplaces []int
 
 	decoder := json.NewDecoder(bytes.NewReader(out))
 	for {
 		var mod map[string]interface{}
-		if err := decoder.Decode(&mod); err == io.EOF {
+		if err = decoder.Decode(&mod); err == io.EOF {
+			err = nil
 			break
 		} else if err != nil {
-			return nil, err
+			return
 		}
+
+		is_main, ok := mod["Main"].(bool)
+		if ok && is_main {
+			// Current module is main module, retrieve the main module name and
+			// root directory path of the main module
+			currentModule = mod["Path"].(string)
+			moduleDir = mod["Dir"].(string)
+			replacements = append(replacements, xcaddy.NewReplace(currentModule, moduleDir))
+			continue
+		}
+
+		// Skip if current module is not replacement
 		rep, ok := mod["Replace"].(map[string]interface{})
 		if !ok {
 			continue
@@ -297,14 +295,25 @@ func parseGoListJson(currentModule, moduleDir string, out []byte) ([]xcaddy.Repl
 		} else if filepath.IsAbs(dstPath) {
 			dst = dstPath
 		} else {
-			dst = filepath.Join(moduleDir, dstPath)
-			log.Printf("[INFO] Resolved relative replacement %s to %s", dstPath, dst)
+			if moduleDir != "" {
+				dst = filepath.Join(moduleDir, dstPath)
+				log.Printf("[INFO] Resolved relative replacement %s to %s", dstPath, dst)
+			} else {
+				// moduleDir is not parsed yet, defer to later
+				dst = dstPath
+				unjoinedReplaces = append(unjoinedReplaces, len(replacements))
+			}
 		}
 
 		replacements = append(replacements, xcaddy.NewReplace(src, dst))
 	}
-
-	return replacements, nil
+	for _, idx := range unjoinedReplaces {
+		unresolved := string(replacements[idx].New)
+		resolved := filepath.Join(moduleDir, unresolved)
+		log.Printf("[INFO] Resolved relative replacement %s to %s", unresolved, resolved)
+		replacements[idx].New = xcaddy.ReplacementPath(resolved)
+	}
+	return
 }
 
 func normalizeImportPath(currentModule, cwd, moduleDir string) string {

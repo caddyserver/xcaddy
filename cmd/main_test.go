@@ -9,14 +9,7 @@ import (
 )
 
 func TestParseGoListJson(t *testing.T) {
-	replacements, err := parseGoListJson("github.com/simnalamburt/module", "/home/work/module", []byte(`
-{
-	"Path": "github.com/simnalamburt/module",
-	"Main": true,
-	"Dir": "/home/work/module",
-	"GoMod": "/home/work/module/go.mod",
-	"GoVersion": "1.17"
-}
+	currentModule, moduleDir, replacements, err := parseGoListJson([]byte(`
 {
 	"Path": "replacetest1",
 	"Version": "v1.2.3",
@@ -57,6 +50,13 @@ func TestParseGoListJson(t *testing.T) {
 	"GoVersion": "1.17"
 }
 {
+	"Path": "github.com/simnalamburt/module",
+	"Main": true,
+	"Dir": "/home/work/module",
+	"GoMod": "/home/work/module/go.mod",
+	"GoVersion": "1.17"
+}
+{
 	"Path": "replacetest4",
 	"Version": "v0.0.1",
 	"Replace": {
@@ -69,16 +69,36 @@ func TestParseGoListJson(t *testing.T) {
 	"GoMod": "/home/work/module/fork2/go.mod",
 	"GoVersion": "1.17"
 }
+{
+	"Path": "replacetest5",
+	"Version": "v1.2.3",
+	"Replace": {
+		"Path": "./fork3",
+		"Dir": "/home/work/module/fork3",
+		"GoMod": "/home/work/module/fork3/go.mod",
+		"GoVersion": "1.17"
+	},
+	"Dir": "/home/work/module/fork3",
+	"GoMod": "/home/work/module/fork3/go.mod",
+	"GoVersion": "1.17"
+}
 `))
 	if err != nil {
 		t.Errorf("Error occured during JSON parsing")
 	}
+	if currentModule != "github.com/simnalamburt/module" {
+		t.Errorf("Unexpected module name")
+	}
+	if moduleDir != "/home/work/module" {
+		t.Errorf("Unexpected module path")
+	}
 	expected := []xcaddy.Replace{
-		xcaddy.NewReplace("github.com/simnalamburt/module", "/home/work/module"),
 		xcaddy.NewReplace("replacetest1@v1.2.3", "golang.org/x/example@v0.0.0-20210811190340-787a929d5a0d"),
 		xcaddy.NewReplace("replacetest2@v0.0.1", "golang.org/x/example@v0.0.0-20210407023211-09c3a5e06b5d"),
 		xcaddy.NewReplace("replacetest3@v1.2.3", "/home/work/module/fork1"),
+		xcaddy.NewReplace("github.com/simnalamburt/module", "/home/work/module"),
 		xcaddy.NewReplace("replacetest4@v0.0.1", "/srv/fork2"),
+		xcaddy.NewReplace("replacetest5@v1.2.3", "/home/work/module/fork3"),
 	}
 	if !reflect.DeepEqual(replacements, expected) {
 		t.Errorf("Expected replacements '%v' but got '%v'", expected, replacements)
