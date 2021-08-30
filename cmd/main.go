@@ -185,10 +185,7 @@ func runDev(ctx context.Context, args []string) error {
 
 	// make sure the module being developed is replaced
 	// so that the local copy is used
-	replacements := []xcaddy.Replace{
-		xcaddy.NewReplace(currentModule, moduleDir),
-	}
-
+	//
 	// replace directives only apply to the top-level/main go.mod,
 	// and since this tool is a carry-through for the user's actual
 	// go.mod, we need to transfer their replace directives through
@@ -199,39 +196,9 @@ func runDev(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
 	}
-	decoder := json.NewDecoder(bytes.NewReader(out))
-	for {
-		var mod map[string]interface{}
-		if err := decoder.Decode(&mod); err == io.EOF {
-			break
-		} else if err != nil {
-			return fmt.Errorf("json parse error: %v", err)
-		}
-		rep, ok := mod["Replace"].(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		srcPath := mod["Path"].(string)
-		srcVersion := mod["Version"].(string)
-		src := srcPath + "@" + srcVersion
-
-		// 1. Target is module, version is required in this case
-		// 2A. Target is absolute path
-		// 2B. Target is relative path, proper handling is required in this case
-		dstPath := rep["Path"].(string)
-		dstVersion, isTargetModule := rep["Version"].(string)
-		var dst string
-		if isTargetModule {
-			dst = dstPath + "@" + dstVersion
-		} else if filepath.IsAbs(dstPath) {
-			dst = dstPath
-		} else {
-			dst = filepath.Join(moduleDir, dstPath)
-			log.Printf("[INFO] Resolved relative replacement %s to %s", dstPath, dst)
-		}
-
-		replacements = append(replacements, xcaddy.NewReplace(src, dst))
+	replacements, err := parseGoListJson(currentModule, moduleDir, out)
+	if err != nil {
+		return fmt.Errorf("json parse error: %v", err)
 	}
 
 	// reconcile remaining path segments; for example if a module foo/a
@@ -295,6 +262,49 @@ func runDev(ctx context.Context, args []string) error {
 	}()
 
 	return cmd.Wait()
+}
+
+func parseGoListJson(currentModule, moduleDir string, out []byte) ([]xcaddy.Replace, error) {
+	replacements := []xcaddy.Replace{
+		xcaddy.NewReplace(currentModule, moduleDir),
+	}
+
+	decoder := json.NewDecoder(bytes.NewReader(out))
+	for {
+		var mod map[string]interface{}
+		if err := decoder.Decode(&mod); err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+		rep, ok := mod["Replace"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		srcPath := mod["Path"].(string)
+		srcVersion := mod["Version"].(string)
+		src := srcPath + "@" + srcVersion
+
+		// 1. Target is module, version is required in this case
+		// 2A. Target is absolute path
+		// 2B. Target is relative path, proper handling is required in this case
+		dstPath := rep["Path"].(string)
+		dstVersion, isTargetModule := rep["Version"].(string)
+		var dst string
+		if isTargetModule {
+			dst = dstPath + "@" + dstVersion
+		} else if filepath.IsAbs(dstPath) {
+			dst = dstPath
+		} else {
+			dst = filepath.Join(moduleDir, dstPath)
+			log.Printf("[INFO] Resolved relative replacement %s to %s", dstPath, dst)
+		}
+
+		replacements = append(replacements, xcaddy.NewReplace(src, dst))
+	}
+
+	return replacements, nil
 }
 
 func normalizeImportPath(currentModule, cwd, moduleDir string) string {
