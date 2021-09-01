@@ -256,7 +256,15 @@ func parseGoListJson(out []byte) (currentModule, moduleDir string, replacements 
 
 	decoder := json.NewDecoder(bytes.NewReader(out))
 	for {
-		var mod map[string]interface{}
+		type Module struct {
+			Path    string  // module path
+			Version string  // module version
+			Replace *Module // replaced by this module
+			Main    bool    // is this the main module?
+			Dir     string  // directory holding files for this module, if any
+		}
+
+		var mod Module
 		if err = decoder.Decode(&mod); err == io.EOF {
 			err = nil
 			break
@@ -264,33 +272,29 @@ func parseGoListJson(out []byte) (currentModule, moduleDir string, replacements 
 			return
 		}
 
-		is_main, ok := mod["Main"].(bool)
-		if ok && is_main {
+		if mod.Main {
 			// Current module is main module, retrieve the main module name and
 			// root directory path of the main module
-			currentModule = mod["Path"].(string)
-			moduleDir = mod["Dir"].(string)
+			currentModule = mod.Path
+			moduleDir = mod.Dir
 			replacements = append(replacements, xcaddy.NewReplace(currentModule, moduleDir))
 			continue
 		}
 
 		// Skip if current module is not replacement
-		rep, ok := mod["Replace"].(map[string]interface{})
-		if !ok {
+		if mod.Replace == nil {
 			continue
 		}
 
-		srcPath := mod["Path"].(string)
-		srcVersion := mod["Version"].(string)
-		src := srcPath + "@" + srcVersion
+		src := mod.Path + "@" + mod.Version
 
 		// 1. Target is module, version is required in this case
 		// 2A. Target is absolute path
 		// 2B. Target is relative path, proper handling is required in this case
-		dstPath := rep["Path"].(string)
-		dstVersion, isTargetModule := rep["Version"].(string)
+		dstPath := mod.Replace.Path
+		dstVersion := mod.Replace.Version
 		var dst string
-		if isTargetModule {
+		if dstVersion != "" {
 			dst = dstPath + "@" + dstVersion
 		} else if filepath.IsAbs(dstPath) {
 			dst = dstPath
