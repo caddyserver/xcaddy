@@ -15,8 +15,11 @@
 package xcaddycmd
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -165,53 +168,24 @@ func getCaddyOutputFile() string {
 func runDev(ctx context.Context, args []string) error {
 	binOutput := getCaddyOutputFile()
 
-	// get current/main module name
-	cmd := exec.Command("go", "list", "-m")
+	// get current/main module name and the root directory of the main module
+	//
+	// make sure the module being developed is replaced
+	// so that the local copy is used
+	//
+	// replace directives only apply to the top-level/main go.mod,
+	// and since this tool is a carry-through for the user's actual
+	// go.mod, we need to transfer their replace directives through
+	// to the one we're making
+	cmd := exec.Command("go", "list", "-m", "-json", "all")
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
 	}
-	currentModule := strings.TrimSpace(string(out))
-
-	// get the root directory of the main module
-	cmd = exec.Command("go", "list", "-m", "-f={{.Dir}}")
-	cmd.Stderr = os.Stderr
-	out, err = cmd.Output()
+	currentModule, moduleDir, replacements, err := parseGoListJson(out)
 	if err != nil {
-		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
-	}
-	moduleDir := strings.TrimSpace(string(out))
-
-	// make sure the module being developed is replaced
-	// so that the local copy is used
-	replacements := []xcaddy.Replace{
-		xcaddy.NewReplace(currentModule, moduleDir),
-	}
-
-	// replace directives only apply to the top-level/main go.mod,
-	// and since this tool is a carry-through for the user's actual
-	// go.mod, we need to transfer their replace directives through
-	// to the one we're making
-	cmd = exec.Command("go", "list", "-m", "-f={{if .Replace}}{{.Path}}=>{{.Replace}}{{end}}", "all")
-	cmd.Stderr = os.Stderr
-	out, err = cmd.Output()
-	if err != nil {
-		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
-	}
-	for _, line := range strings.Split(string(out), "\n") {
-		parts := strings.Split(line, "=>")
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			continue
-		}
-
-		// adjust relative replacements in original module since our temporary module is in a different directory
-		if !filepath.IsAbs(parts[1]) {
-			parts[1] = filepath.Join(moduleDir, parts[1])
-			log.Printf("[INFO] Resolved relative replacement %s to %s", line, parts[1])
-		}
-
-		replacements = append(replacements, xcaddy.NewReplace(parts[0], parts[1]))
+		return fmt.Errorf("json parse error: %v", err)
 	}
 
 	// reconcile remaining path segments; for example if a module foo/a
@@ -275,6 +249,75 @@ func runDev(ctx context.Context, args []string) error {
 	}()
 
 	return cmd.Wait()
+}
+
+type module struct {
+	Path    string  // module path
+	Version string  // module version
+	Replace *module // replaced by this module
+	Main    bool    // is this the main module?
+	Dir     string  // directory holding files for this module, if any
+}
+
+func parseGoListJson(out []byte) (currentModule, moduleDir string, replacements []xcaddy.Replace, err error) {
+	var unjoinedReplaces []int
+
+	decoder := json.NewDecoder(bytes.NewReader(out))
+	for {
+		var mod module
+		if err = decoder.Decode(&mod); err == io.EOF {
+			err = nil
+			break
+		} else if err != nil {
+			return
+		}
+
+		if mod.Main {
+			// Current module is main module, retrieve the main module name and
+			// root directory path of the main module
+			currentModule = mod.Path
+			moduleDir = mod.Dir
+			replacements = append(replacements, xcaddy.NewReplace(currentModule, moduleDir))
+			continue
+		}
+
+		// Skip if current module is not replacement
+		if mod.Replace == nil {
+			continue
+		}
+
+		src := mod.Path + "@" + mod.Version
+
+		// 1. Target is module, version is required in this case
+		// 2A. Target is absolute path
+		// 2B. Target is relative path, proper handling is required in this case
+		dstPath := mod.Replace.Path
+		dstVersion := mod.Replace.Version
+		var dst string
+		if dstVersion != "" {
+			dst = dstPath + "@" + dstVersion
+		} else if filepath.IsAbs(dstPath) {
+			dst = dstPath
+		} else {
+			if moduleDir != "" {
+				dst = filepath.Join(moduleDir, dstPath)
+				log.Printf("[INFO] Resolved relative replacement %s to %s", dstPath, dst)
+			} else {
+				// moduleDir is not parsed yet, defer to later
+				dst = dstPath
+				unjoinedReplaces = append(unjoinedReplaces, len(replacements))
+			}
+		}
+
+		replacements = append(replacements, xcaddy.NewReplace(src, dst))
+	}
+	for _, idx := range unjoinedReplaces {
+		unresolved := string(replacements[idx].New)
+		resolved := filepath.Join(moduleDir, unresolved)
+		log.Printf("[INFO] Resolved relative replacement %s to %s", unresolved, resolved)
+		replacements[idx].New = xcaddy.ReplacementPath(resolved)
+	}
+	return
 }
 
 func normalizeImportPath(currentModule, cwd, moduleDir string) string {
