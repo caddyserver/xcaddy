@@ -251,20 +251,20 @@ func runDev(ctx context.Context, args []string) error {
 	return cmd.Wait()
 }
 
+type module struct {
+	Path    string  // module path
+	Version string  // module version
+	Replace *module // replaced by this module
+	Main    bool    // is this the main module?
+	Dir     string  // directory holding files for this module, if any
+}
+
 func parseGoListJson(out []byte) (currentModule, moduleDir string, replacements []xcaddy.Replace, err error) {
 	var unjoinedReplaces []int
 
 	decoder := json.NewDecoder(bytes.NewReader(out))
 	for {
-		type Module struct {
-			Path    string  // module path
-			Version string  // module version
-			Replace *Module // replaced by this module
-			Main    bool    // is this the main module?
-			Dir     string  // directory holding files for this module, if any
-		}
-
-		var mod Module
+		var mod module
 		if err = decoder.Decode(&mod); err == io.EOF {
 			err = nil
 			break
