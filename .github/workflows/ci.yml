@@ -111,8 +111,6 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
-      - name: Create 'xcaddy-build'
-        run: mkdir -p xcaddy-build
       - uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
