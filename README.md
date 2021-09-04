@@ -5,8 +5,6 @@ This command line tool and associated Go package makes it easy to make custom bu
 
 It is used heavily by Caddy plugin developers as well as anyone who wishes to make custom `caddy` binaries (with or without plugins).
 
-⚠️ Still in development. Supports Caddy 2 only.
-
 Stay updated, be aware of changes, and please submit feedback! Thanks!
 
 ## Requirements
@@ -27,7 +25,7 @@ For Debian, Ubuntu, and Raspbian, an `xcaddy` package is available from our [Clo
 
 ```bash
 sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/xcaddy/gpg.key' | sudo apt-key add -
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/xcaddy/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-xcaddy.asc
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/xcaddy/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-xcaddy.list
 sudo apt update
 sudo apt install xcaddy
@@ -84,6 +82,7 @@ $ xcaddy build \
 
 This allows you to hack on Caddy core (and optionally plug in extra modules at the same time!) with relative ease.
 
+
 ### For plugin development
 
 If you run `xcaddy` from within the folder of the Caddy plugin you're working on _without the `build` subcommand_, it will build Caddy with your current module and run it, as if you manually plugged it in and invoked `go run`.
@@ -108,6 +107,13 @@ $ xcaddy run --config caddy.json
 ```
 
 The race detector can be enabled by setting `XCADDY_RACE_DETECTOR=1`. The DWARF debug info can be enabled by setting `XCADDY_DEBUG=1`.
+
+
+### Getting `xcaddy`'s version
+
+```
+$ xcaddy version
+```
 
 
 ## Library usage
