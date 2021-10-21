@@ -85,6 +85,8 @@ The binary will be built and run from the current directory, then cleaned up.
 
 The current working directory must be inside an initialized Go module.
 
+Also note that because of the way xk6 works, vendored dependencies (the vendor directory created by go mod vendor) will not be taken into account when building a binary, and you don't need to commit them to the extension repository.
+
 Syntax:
 
 ```
