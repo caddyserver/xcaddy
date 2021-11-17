@@ -75,15 +75,32 @@ func runBuild(ctx context.Context, args []string) error {
 				Version:     ver,
 			})
 			if repl != "" {
-				if repl == "." {
-					if cwd, err := os.Getwd(); err != nil {
-						return err
-					} else {
-						repl = cwd
-					}
+				repl, err = expandPath(repl)
+				if err != nil {
+					return err
 				}
 				replacements = append(replacements, xk6.NewReplace(mod, repl))
 			}
+
+		case "--replace":
+			if i == len(args)-1 {
+				return fmt.Errorf("expected value after --replace flag")
+			}
+			i++
+			mod, _, repl, err := splitWith(args[i])
+			if err != nil {
+				return err
+			}
+			if repl == "" {
+				return fmt.Errorf("replace value must be of format 'module=replace' or 'module=replace@version'")
+			}
+			// easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
+			mod = strings.TrimSuffix(mod, "/")
+			repl, err = expandPath(repl)
+			if err != nil {
+				return err
+			}
+			replacements = append(replacements, xk6.NewReplace(mod, repl))
 
 		case "--output":
 			if i == len(args)-1 {
@@ -273,22 +290,19 @@ func trapSignals(ctx context.Context, cancel context.CancelFunc) {
 func splitWith(arg string) (module, version, replace string, err error) {
 	const versionSplit, replaceSplit = "@", "="
 
-	parts := strings.SplitN(arg, versionSplit, 2)
+	parts := strings.SplitN(arg, replaceSplit, 2)
+	if len(parts) > 1 {
+		replace = parts[1]
+	} else {
+		replace = ""
+	}
+
 	module = parts[0]
 
-	if len(parts) == 1 {
-		parts := strings.SplitN(module, replaceSplit, 2)
-		if len(parts) > 1 {
-			module = parts[0]
-			replace = parts[1]
-		}
-	} else {
-		version = parts[1]
-		parts := strings.SplitN(version, replaceSplit, 2)
-		if len(parts) > 1 {
-			version = parts[0]
-			replace = parts[1]
-		}
+	moduleParts := strings.SplitN(module, versionSplit, 2)
+	if len(moduleParts) > 1 {
+		module = moduleParts[0]
+		version = moduleParts[1]
 	}
 
 	if module == "" {
@@ -296,4 +310,24 @@ func splitWith(arg string) (module, version, replace string, err error) {
 	}
 
 	return
+}
+
+func expandPath(path string) (string, error) {
+	// expand local directory
+	if path == "." {
+		if cwd, err := os.Getwd(); err != nil {
+			return "", err
+		} else {
+			return cwd, nil
+		}
+	}
+	// expand ~ as shortcut for home directory
+	if strings.HasPrefix(path, "~") {
+		if home, err := os.UserHomeDir(); err != nil {
+			return "", err
+		} else {
+			return strings.Replace(path, "~", home, 1), nil
+		}
+	}
+	return path, nil
 }

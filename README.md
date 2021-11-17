@@ -42,11 +42,13 @@ Syntax:
 $ xk6 build [<k6_version>]
     [--output <file>]
     [--with <module[@version][=replacement]>...]
+    [--replace <module=replacement>...]
 ```
 
 - `<k6_version>` is the core k6 version to build; defaults to `K6_VERSION` env variable or latest.
 - `--output` changes the output file.
 - `--with` can be used multiple times to add extensions by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional.
+- `--replace` can be used multiple times to add replacements by specifying the Go module name and the replacement module, similar to `go mod edit -replace=`. Version of the replacement can be specified with the `@version` suffix in the replacement path.
 
 Examples:
 
