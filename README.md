@@ -47,36 +47,36 @@ $ xk6 build [<k6_version>]
 
 - `<k6_version>` is the core k6 version to build; defaults to `K6_VERSION` env variable or latest.
 - `--output` changes the output file.
-- `--with` can be used multiple times to add extensions by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional.
+- `--with` can be used multiple times to add extensions by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional. For an up-to-date list of k6 extensions, head to our [extensions page](https://k6.io/docs/extensions/).
 - `--replace` can be used multiple times to add replacements by specifying the Go module name and the replacement module, similar to `go mod edit -replace=`. Version of the replacement can be specified with the `@version` suffix in the replacement path.
 
 Examples:
 
 ```bash
 $ xk6 build \
-    --with github.com/k6io/xk6-sql
+    --with github.com/grafana/xk6-browser
 
-$ xk6 build v0.29.0 \
-    --with github.com/k6io/xk6-sql@v0.0.1
-
-$ xk6 build \
-    --with github.com/k6io/xk6-sql=../../my-fork
+$ xk6 build v0.35.0 \
+    --with github.com/grafana/xk6-browser@v0.1.1
 
 $ xk6 build \
-    --with github.com/k6io/xk6-sql=.
+    --with github.com/grafana/xk6-browser=../../my-fork
 
 $ xk6 build \
-    --with github.com/k6io/xk6-sql@v0.0.1=../../my-fork
+    --with github.com/grafana/xk6-browser=.
+
+$ xk6 build \
+    --with github.com/grafana/xk6-browser@v0.1.1=../../my-fork
 
 # Build using a k6 fork repository. Note that a version is required if
 # XK6_K6_REPO is a URI.
 $ XK6_K6_REPO=github.com/example/k6 xk6 build master \
-    --with github.com/k6io/xk6-sql
+    --with github.com/grafana/xk6-browser
 
 # Build using a k6 fork repository from a local path. The version must be omitted
 # and the path must be absolute.
 $ XK6_K6_REPO="$PWD/../../k6" xk6 build \
-    --with github.com/k6io/xk6-sql
+    --with github.com/grafana/xk6-browser
 ```
 
 ### For extension development
@@ -110,11 +110,11 @@ The race detector can be enabled by setting `XK6_RACE_DETECTOR=1`.
 
 ```go
 builder := xk6.Builder{
-	k6Version: "v0.29.0",
+	k6Version: "v0.35.0",
 	Extensions: []xk6.Dependency{
 		{
-			ModulePath: "github.com/k6io/xk6-sql",
-			Version:    "v0.0.1",
+			ModulePath: "github.com/grafana/xk6-browser",
+			Version:    "v0.1.1",
 		},
 	},
 }
