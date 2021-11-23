@@ -47,11 +47,7 @@ $ xk6 build [<k6_version>]
 
 - `<k6_version>` is the core k6 version to build; defaults to `K6_VERSION` env variable or latest.
 - `--output` changes the output file.
-<<<<<<< HEAD
-- `--with` can be used multiple times to add extensions by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional.
-=======
-- `--with` can be used multiple times to add extensions by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional. For an up-to-date list of k6 extensions, head to our documentation's [extensions page](https://k6.io/docs/extensions/).
->>>>>>> 35d8e0f... RFR
+- `--with` can be used multiple times to add extensions by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional. For an up-to-date list of k6 extensions, head to our [extensions page](https://k6.io/docs/extensions/).
 - `--replace` can be used multiple times to add replacements by specifying the Go module name and the replacement module, similar to `go mod edit -replace=`. Version of the replacement can be specified with the `@version` suffix in the replacement path.
 
 Examples:
