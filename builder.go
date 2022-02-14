@@ -118,7 +118,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	}
 	if b.Debug {
 		cmd.Args = append(cmd.Args,
-			 "-gcflags", "all=-N -l",
+			 "-gcflags", "all=-N -l", // support dlv
 			)
 	}
 
