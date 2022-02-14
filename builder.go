@@ -116,6 +116,11 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 			"-trimpath",
 		)
 	}
+	if b.Debug {
+		cmd.Args = append(cmd.Args,
+			 "-gcflags", "all=-N -l",
+			)
+	}
 
 	if b.RaceDetector {
 		cmd.Args = append(cmd.Args, "-race")
