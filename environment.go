@@ -104,9 +104,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	replaced := make(map[string]string)
 	for _, r := range b.Replacements {
 		log.Printf("[INFO] Replace %s => %s", r.Old.String(), r.New.String())
-		cmd := env.newCommand("go", "mod", "edit",
-			"-replace", fmt.Sprintf("%s=%s", r.Old.Param(), r.New.Param()))
-		err := env.runCommand(ctx, cmd, 10*time.Second)
+		err = env.execGoModReplace(ctx, r.Old.Param(), r.New.Param())
 		if err != nil {
 			return nil, err
 		}
@@ -135,12 +133,11 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 		if err != nil {
 			return nil, err
 		}
-		replace := fmt.Sprintf("%s=%s", k6ModulePath, b.K6Repo)
+		replace := b.K6Repo
 		if b.K6Version != "" {
-			replace = fmt.Sprintf("%s@%s", replace, b.K6Version)
+			replace = fmt.Sprintf("%s@%s", b.K6Repo, b.K6Version)
 		}
-		cmd = env.newCommand("go", "mod", "edit", "-replace", replace)
-		err = env.runCommand(ctx, cmd, 10*time.Second)
+		err = env.execGoModReplace(ctx, k6ModulePath, replace)
 		if err != nil {
 			return nil, err
 		}
@@ -256,6 +253,18 @@ func (env environment) execGoModRequire(ctx context.Context, modulePath, moduleV
 	}
 	cmd := env.newCommand("go", "mod", "edit", "-require", mod)
 	err := env.runCommand(ctx, cmd, env.timeoutGoGet)
+	if err != nil {
+		return err
+	}
+	// tidy the module to ensure go.mod will not have versions such as `latest`
+	tidyCmd := env.newCommand("go", "mod", "tidy")
+	return env.runCommand(ctx, tidyCmd, env.timeoutGoGet)
+}
+
+func (env environment) execGoModReplace(ctx context.Context, modulePath, replaceRepo string) error {
+	replace := fmt.Sprintf("%s=%s", modulePath, replaceRepo)
+	cmd := env.newCommand("go", "mod", "edit", "-replace", replace)
+	err := env.runCommand(ctx, cmd, 10*time.Second)
 	if err != nil {
 		return err
 	}
