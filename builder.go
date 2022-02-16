@@ -110,11 +110,9 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	cmd := buildEnv.newCommand("go", "build",
 		"-o", absOutputFile,
 	)
-
 	if b.Debug {
-		cmd.Args = append(cmd.Args,
-			"-gcflags", "all=-N -l", // support dlv
-		)
+		// support dlv
+		cmd.Args = append(cmd.Args, "-gcflags", "all=-N -l")
 	} else {
 		cmd.Args = append(cmd.Args,
 			"-ldflags", "-w -s", // trim debug symbols
