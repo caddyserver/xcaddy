@@ -37,7 +37,7 @@ var (
 	caddyVersion     = os.Getenv("CADDY_VERSION")
 	raceDetector     = os.Getenv("XCADDY_RACE_DETECTOR") == "1"
 	skipBuild        = os.Getenv("XCADDY_SKIP_BUILD") == "1"
-	skipCleanup      = os.Getenv("XCADDY_SKIP_CLEANUP") == "1"
+	skipCleanup      = os.Getenv("XCADDY_SKIP_CLEANUP") == "1" || skipBuild
 	buildDebugOutput = os.Getenv("XCADDY_DEBUG") == "1"
 )
 
