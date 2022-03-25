@@ -53,7 +53,12 @@ $ xcaddy build [<caddy_version>]
     [--with <module[@version][=replacement]>...]
 ```
 
-- `<caddy_version>` is the core Caddy version to build; defaults to `CADDY_VERSION` env variable or latest.
+- `<caddy_version>` is the core Caddy version to build; defaults to `CADDY_VERSION` env variable or latest.<br>
+  This can be the keyword `latest`, which will use the latest stable tag, or any git ref such as:
+  - A tag like `v2.0.1`
+  - A branch like `master`
+  - A commit like `a58f240d3ecbb59285303746406cab50217f8d24`
+
 - `--output` changes the output file.
 - `--with` can be used multiple times to add plugins by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional.
 
@@ -65,6 +70,12 @@ $ xcaddy build \
 
 $ xcaddy build v2.0.1 \
     --with github.com/caddyserver/ntlm-transport@v0.1.1
+
+$ xcaddy build master \
+    --with github.com/caddyserver/ntlm-transport
+
+$ xcaddy build a58f240d3ecbb59285303746406cab50217f8d24 \
+    --with github.com/caddyserver/ntlm-transport
 
 $ xcaddy build \
     --with github.com/caddyserver/ntlm-transport=../../my-fork
