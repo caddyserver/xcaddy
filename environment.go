@@ -154,7 +154,10 @@ nextPlugin:
 		default:
 		}
 	}
-
+	err = env.execGoGet(ctx, "", "")
+	if err != nil {
+		return nil, err
+	}
 	log.Println("[INFO] Build environment ready")
 
 	return env, nil
