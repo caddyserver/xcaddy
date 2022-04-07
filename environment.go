@@ -247,6 +247,7 @@ func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd, timeout ti
 // Caddy module/version we're building against; this will prevent the
 // plugin module from causing the Caddy version to upgrade, if the plugin
 // version requires a newer version of Caddy.
+// See https://github.com/caddyserver/xcaddy/issues/54
 func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion, caddyModulePath, caddyVersion string) error {
 	mod := modulePath
 	if moduleVersion != "" {
@@ -257,9 +258,9 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion,
 		caddy += "@" + caddyVersion
 	}
 
-	// for some reason, using an empty string as an additional
-	// argument to "go get" breaks the command, so we're using
-	// an if statement to avoid it.
+	// using an empty string as an additional argument to "go get"
+	// breaks the command since it treats the empty string as a
+	// distinct argument, so we're using an if statement to avoid it.
 	var cmd *exec.Cmd
 	if caddy != "" {
 		cmd = env.newCommand("go", "get", "-d", "-v", mod, caddy)
