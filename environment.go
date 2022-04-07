@@ -128,7 +128,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// pin versions by populating go.mod, first for Caddy itself and then plugins
 	log.Println("[INFO] Pinning versions")
-	err = env.execGoGet(ctx, caddyModulePath, env.caddyVersion)
+	err = env.execGoGet(ctx, caddyModulePath, env.caddyVersion, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,8 @@ nextPlugin:
 				continue nextPlugin
 			}
 		}
-		err = env.execGoGet(ctx, p.PackagePath, p.Version)
+		// also pass the Caddy version to prevent it from being upgraded
+		err = env.execGoGet(ctx, p.PackagePath, p.Version, caddyModulePath, env.caddyVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -154,12 +155,16 @@ nextPlugin:
 		default:
 		}
 	}
-	err = env.execGoGet(ctx, "", "")
+
+	// doing an empty "go get -d" can potentially resolve some
+	// ambiguities introduced by one of the plugins;
+	// see https://github.com/caddyserver/xcaddy/pull/92
+	err = env.execGoGet(ctx, "", "", "", "")
 	if err != nil {
 		return nil, err
 	}
-	log.Println("[INFO] Build environment ready")
 
+	log.Println("[INFO] Build environment ready")
 	return env, nil
 }
 
@@ -237,12 +242,32 @@ func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd, timeout ti
 	}
 }
 
-func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion string) error {
+// execGoGet runs "go get -d -v" with the given module/version as an argument.
+// Also allows passing in a second module/version pair, meant to be the main
+// Caddy module/version we're building against; this will prevent the
+// plugin module from causing the Caddy version to upgrade, if the plugin
+// version requires a newer version of Caddy.
+// See https://github.com/caddyserver/xcaddy/issues/54
+func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion, caddyModulePath, caddyVersion string) error {
 	mod := modulePath
 	if moduleVersion != "" {
 		mod += "@" + moduleVersion
 	}
-	cmd := env.newCommand("go", "get", "-d", "-v", mod)
+	caddy := caddyModulePath
+	if caddyVersion != "" {
+		caddy += "@" + caddyVersion
+	}
+
+	// using an empty string as an additional argument to "go get"
+	// breaks the command since it treats the empty string as a
+	// distinct argument, so we're using an if statement to avoid it.
+	var cmd *exec.Cmd
+	if caddy != "" {
+		cmd = env.newCommand("go", "get", "-d", "-v", mod, caddy)
+	} else {
+		cmd = env.newCommand("go", "get", "-d", "-v", mod)
+	}
+
 	return env.runCommand(ctx, cmd, env.timeoutGoGet)
 }
 
