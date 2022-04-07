@@ -230,7 +230,7 @@ func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd, timeout ti
 		// to the child process, so wait for it to die
 		select {
 		case <-time.After(15 * time.Second):
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill()
 		case <-cmdErrChan:
 		}
 		return ctx.Err()
