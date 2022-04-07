@@ -83,7 +83,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// write the main module file to temporary folder
 	mainPath := filepath.Join(tempFolder, "main.go")
-	log.Printf("[INFO] Writing main module: %s", mainPath)
+	log.Printf("[INFO] Writing main module: %s\n%s", mainPath, buf.Bytes())
 	err = ioutil.WriteFile(mainPath, buf.Bytes(), 0644)
 	if err != nil {
 		return nil, err
@@ -230,7 +230,7 @@ func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd, timeout ti
 		// to the child process, so wait for it to die
 		select {
 		case <-time.After(15 * time.Second):
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill()
 		case <-cmdErrChan:
 		}
 		return ctx.Err()

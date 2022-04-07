@@ -40,3 +40,7 @@ issues:
     - text: "G204" # G204: Audit use of command execution
       linters:
         - gosec
+    # we're writing out the main.go to a temp dir, not sensitive
+    - text: "G306" # G306: Expect WriteFile permissions to be 0600 or less (gosec)
+      linters:
+        - gosec

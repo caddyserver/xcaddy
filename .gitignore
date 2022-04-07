@@ -4,6 +4,8 @@ _gitignore/
 # build artifacts
 cmd/xcaddy/xcaddy
 cmd/xcaddy/xcaddy.exe
+cmd/xcaddy/caddy
+cmd/xcaddy/caddy.exe
 
 # mac
 .DS_Store
