@@ -177,7 +177,7 @@ func runDev(ctx context.Context, args []string) error {
 	// and since this tool is a carry-through for the user's actual
 	// go.mod, we need to transfer their replace directives through
 	// to the one we're making
-	cmd := exec.Command("go", "list", "-m", "-json", "all")
+	cmd := exec.Command(xcaddy.GetGo(), "list", "-m", "-json", "all")
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {

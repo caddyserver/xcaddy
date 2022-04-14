@@ -30,7 +30,7 @@ type Platform struct {
 // SupportedPlatforms runs `go tool dist list` to make
 // a list of possible build targets.
 func SupportedPlatforms() ([]Compile, error) {
-	out, err := exec.Command("go", "tool", "dist", "list", "-json").Output()
+	out, err := exec.Command(GetGo(), "tool", "dist", "list", "-json").Output()
 	if err != nil {
 		return nil, err
 	}
