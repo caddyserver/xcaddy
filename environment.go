@@ -26,6 +26,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/caddyserver/xcaddy/internal/utils"
 )
 
 func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
@@ -100,7 +102,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// initialize the go module
 	log.Println("[INFO] Initializing Go module")
-	cmd := env.newCommand(GetGo(), "mod", "init", "caddy")
+	cmd := env.newCommand(utils.GetGo(), "mod", "init", "caddy")
 	err = env.runCommand(ctx, cmd, 10*time.Second)
 	if err != nil {
 		return nil, err
@@ -110,7 +112,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	replaced := make(map[string]string)
 	for _, r := range b.Replacements {
 		log.Printf("[INFO] Replace %s => %s", r.Old.String(), r.New.String())
-		cmd := env.newCommand(GetGo(), "mod", "edit",
+		cmd := env.newCommand(utils.GetGo(), "mod", "edit",
 			"-replace", fmt.Sprintf("%s=%s", r.Old.Param(), r.New.Param()))
 		err := env.runCommand(ctx, cmd, 10*time.Second)
 		if err != nil {
@@ -263,22 +265,12 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion,
 	// distinct argument, so we're using an if statement to avoid it.
 	var cmd *exec.Cmd
 	if caddy != "" {
-		cmd = env.newCommand(GetGo(), "get", "-d", "-v", mod, caddy)
+		cmd = env.newCommand(utils.GetGo(), "get", "-d", "-v", mod, caddy)
 	} else {
-		cmd = env.newCommand(GetGo(), "get", "-d", "-v", mod)
+		cmd = env.newCommand(utils.GetGo(), "get", "-d", "-v", mod)
 	}
 
 	return env.runCommand(ctx, cmd, env.timeoutGoGet)
-}
-
-// GetGo returns the go executable to use depending on what
-// is set in the XCADDY_WHICH_GO environment variable.
-func GetGo() string {
-	g := os.Getenv("XCADDY_WHICH_GO")
-	if g == "" {
-		return "go"
-	}
-	return g
 }
 
 type goModTemplateContext struct {
