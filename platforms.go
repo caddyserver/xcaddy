@@ -3,6 +3,8 @@ package xcaddy
 import (
 	"encoding/json"
 	"os/exec"
+
+	"github.com/caddyserver/xcaddy/internal/utils"
 )
 
 // Compile contains parameters for compilation.
@@ -30,7 +32,7 @@ type Platform struct {
 // SupportedPlatforms runs `go tool dist list` to make
 // a list of possible build targets.
 func SupportedPlatforms() ([]Compile, error) {
-	out, err := exec.Command("go", "tool", "dist", "list", "-json").Output()
+	out, err := exec.Command(utils.GetGo(), "tool", "dist", "list", "-json").Output()
 	if err != nil {
 		return nil, err
 	}
