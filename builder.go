@@ -30,6 +30,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/caddyserver/xcaddy/internal/utils"
+	"github.com/google/shlex"
 )
 
 // Builder can produce a custom Caddy build with the
@@ -45,6 +46,7 @@ type Builder struct {
 	SkipCleanup  bool          `json:"skip_cleanup,omitempty"`
 	SkipBuild    bool          `json:"skip_build,omitempty"`
 	Debug        bool          `json:"debug,omitempty"`
+	BuildFlags   string        `json:"build_flags,omitempty"`
 }
 
 // Build builds Caddy at the configured version with the
@@ -115,10 +117,19 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 		// support dlv
 		cmd.Args = append(cmd.Args, "-gcflags", "all=-N -l")
 	} else {
-		cmd.Args = append(cmd.Args,
-			"-ldflags", "-w -s", // trim debug symbols
-			"-trimpath",
-		)
+		if b.BuildFlags != "" {
+			// override build flags from environment if given
+			flags, err := shlex.Split(b.BuildFlags)
+			if err != nil {
+				log.Fatalf("[FATAL] Splitting arguments failed: %s", b.BuildFlags)
+			}
+			cmd.Args = append(cmd.Args, flags...)
+		} else {
+			cmd.Args = append(cmd.Args,
+				"-ldflags", "-w -s", // trim debug symbols
+				"-trimpath",
+			)
+		}
 	}
 
 	if b.RaceDetector {
