@@ -98,6 +98,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 		tempFolder:      tempFolder,
 		timeoutGoGet:    b.TimeoutGet,
 		skipCleanup:     b.SkipCleanup,
+		buildFlags:      b.BuildFlags,
 	}
 
 	// initialize the go module
@@ -177,6 +178,7 @@ type environment struct {
 	tempFolder      string
 	timeoutGoGet    time.Duration
 	skipCleanup     bool
+	buildFlags      string
 }
 
 // Close cleans up the build environment, including deleting
