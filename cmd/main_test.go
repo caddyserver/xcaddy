@@ -60,6 +60,12 @@ func TestSplitWith(t *testing.T) {
 			input:     "",
 			expectErr: true,
 		},
+		{
+			// issue #109
+			input:         "/home/devin/projects/@relay/caddy-bin@version",
+			expectModule:  "/home/devin/projects/@relay/caddy-bin",
+			expectVersion: "version",
+		},
 	} {
 		actualModule, actualVersion, actualReplace, actualErr := splitWith(tc.input)
 		if actualModule != tc.expectModule {

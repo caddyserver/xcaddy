@@ -343,25 +343,23 @@ func trapSignals(ctx context.Context, cancel context.CancelFunc) {
 func splitWith(arg string) (module, version, replace string, err error) {
 	const versionSplit, replaceSplit = "@", "="
 
-	modules := strings.SplitN(arg, replaceSplit, 2)
-	if len(modules) > 1 {
-		replace = modules[1]
+	parts := strings.SplitN(arg, replaceSplit, 2)
+	if len(parts) > 1 {
+		replace = parts[1]
 	}
-
-	parts := strings.SplitN(modules[0], versionSplit, 2)
 	module = parts[0]
-	if len(parts) == 1 {
-		parts := strings.SplitN(module, replaceSplit, 2)
-		if len(parts) > 1 {
-			module = parts[0]
-			replace = parts[1]
+
+	// accommodate module paths that have @ in them, but we can only tolerate that if there's also
+	// a version, otherwise we don't know if it's a version separator or part of the file path (see #109)
+	lastVersionSplit := strings.LastIndex(module, versionSplit)
+	if lastVersionSplit < 0 {
+		if replaceIdx := strings.Index(module, replaceSplit); replaceIdx >= 0 {
+			module, replace = module[:replaceIdx], module[replaceIdx+1:]
 		}
 	} else {
-		version = parts[1]
-		parts := strings.SplitN(version, replaceSplit, 2)
-		if len(parts) > 1 {
-			version = parts[0]
-			replace = parts[1]
+		module, version = module[:lastVersionSplit], module[lastVersionSplit+1:]
+		if replaceIdx := strings.Index(version, replaceSplit); replaceIdx >= 0 {
+			version, replace = module[:replaceIdx], module[replaceIdx+1:]
 		}
 	}
 
