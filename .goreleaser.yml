@@ -19,7 +19,6 @@ before:
 builds:
 - env:
   - CGO_ENABLED=0
-  - GO111MODULE=on
   main: main.go
   dir: ./xcaddy-build
   binary: xcaddy
@@ -74,7 +73,7 @@ nfpms:
   - id: default
     package_name: xcaddy
 
-    vendor: Light Code Labs
+    vendor: Dyanim
     homepage: https://caddyserver.com
     maintainer: Matthew Holt <mholt@users.noreply.github.com>
     description: |
