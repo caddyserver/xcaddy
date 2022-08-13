@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/caddyserver/xcaddy/internal/utils"
+	"github.com/google/shlex"
 )
 
 func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
@@ -103,7 +104,8 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// initialize the go module
 	log.Println("[INFO] Initializing Go module")
-	cmd := env.newCommand(utils.GetGo(), "mod", "init", "caddy")
+	cmd := env.newCommand(utils.GetGo(), "mod", "init")
+	cmd.Args = append(cmd.Args, "caddy")
 	err = env.runCommand(ctx, cmd, 10*time.Second)
 	if err != nil {
 		return nil, err
@@ -197,6 +199,18 @@ func (env environment) newCommand(command string, args ...string) *exec.Cmd {
 	cmd.Dir = env.tempFolder
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+	if env.buildFlags == "" {
+		return cmd
+	}
+
+	flags, err := shlex.Split(env.buildFlags)
+	if err != nil {
+		log.Printf("[ERROR] Splitting arguments failed: %s", env.buildFlags)
+		return cmd
+	}
+	cmd.Args = append(cmd.Args, flags...)
+
 	return cmd
 }
 
@@ -262,14 +276,14 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion,
 		caddy += "@" + caddyVersion
 	}
 
+	cmd := env.newCommand(utils.GetGo(), "get", "-d", "-v")
 	// using an empty string as an additional argument to "go get"
 	// breaks the command since it treats the empty string as a
 	// distinct argument, so we're using an if statement to avoid it.
-	var cmd *exec.Cmd
 	if caddy != "" {
-		cmd = env.newCommand(utils.GetGo(), "get", "-d", "-v", mod, caddy)
+		cmd.Args = append(cmd.Args, mod, caddy)
 	} else {
-		cmd = env.newCommand(utils.GetGo(), "get", "-d", "-v", mod)
+		cmd.Args = append(cmd.Args, mod)
 	}
 
 	return env.runCommand(ctx, cmd, env.timeoutGoGet)
