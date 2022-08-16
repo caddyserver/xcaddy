@@ -105,6 +105,10 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 
 	// tidy the module to ensure go.mod and go.sum are consistent with the module prereq
 	tidyCmd := buildEnv.newCommand(utils.GetGo(), "mod", "tidy")
+	// go introduced module graph pruning in version 1.17 which requires compatibility resolution
+	if strings.HasPrefix(runtime.Version(), "go1.17") {
+		tidyCmd.Args = append(tidyCmd.Args, "-compat=1.17")
+	}
 	if err := buildEnv.runCommand(ctx, tidyCmd, b.TimeoutGet); err != nil {
 		return err
 	}
