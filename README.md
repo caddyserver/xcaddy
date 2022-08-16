@@ -157,7 +157,9 @@ Because the subcommands and flags are constrained to benefit rapid plugin protot
 - `XCADDY_SKIP_BUILD=1` causes xcaddy to not compile the program, it is used in conjunction with build tools such as [GoReleaser](https://goreleaser.com). Implies `XCADDY_SKIP_CLEANUP=1`.
 - `XCADDY_SKIP_CLEANUP=1` causes xcaddy to leave build artifacts on disk after exiting.
 - `XCADDY_WHICH_GO` sets the go command to use when for example more then 1 version of go is installed.
-- `XCADDY_GO_BUILD_FLAGS` overrides default build arguments. Supports Unix-style shell quoting, for example: XCADDY_GO_BUILD_FLAGS="-ldflags '-w s'".
+- `XCADDY_GO_BUILD_FLAGS` overrides default build arguments. Supports Unix-style shell quoting, for example: XCADDY_GO_BUILD_FLAGS="-ldflags '-w s'". The provided flags are applied to `go` commands: build, clean, get, install, list, run, and test
+- `XCADDY_GO_MOD_FLAGS` overrides default `go mod` arguments. Supports Unix-style shell quoting.
+
 ---
 
 &copy; 2020 Matthew Holt

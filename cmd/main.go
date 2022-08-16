@@ -41,6 +41,7 @@ var (
 	skipCleanup      = os.Getenv("XCADDY_SKIP_CLEANUP") == "1" || skipBuild
 	buildDebugOutput = os.Getenv("XCADDY_DEBUG") == "1"
 	buildFlags       = os.Getenv("XCADDY_GO_BUILD_FLAGS")
+	modFlags         = os.Getenv("XCADDY_GO_MOD_FLAGS")
 )
 
 func Main() {
@@ -136,6 +137,7 @@ func runBuild(ctx context.Context, args []string) error {
 		SkipCleanup:  skipCleanup,
 		Debug:        buildDebugOutput,
 		BuildFlags:   buildFlags,
+		ModFlags:     modFlags,
 	}
 	err := builder.Build(ctx, output)
 	if err != nil {

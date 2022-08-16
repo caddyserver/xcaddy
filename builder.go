@@ -45,6 +45,7 @@ type Builder struct {
 	SkipBuild    bool          `json:"skip_build,omitempty"`
 	Debug        bool          `json:"debug,omitempty"`
 	BuildFlags   string        `json:"build_flags,omitempty"`
+	ModFlags     string        `json:"mod_flags,omitempty"`
 }
 
 // Build builds Caddy at the configured version with the
@@ -102,13 +103,13 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	log.Println("[INFO] Building Caddy")
 
 	// tidy the module to ensure go.mod and go.sum are consistent with the module prereq
-	tidyCmd := buildEnv.newGoCommand("mod", "tidy")
+	tidyCmd := buildEnv.newGoModCommand("tidy")
 	if err := buildEnv.runCommand(ctx, tidyCmd, b.TimeoutGet); err != nil {
 		return err
 	}
 
 	// compile
-	cmd := buildEnv.newGoCommand("build",
+	cmd := buildEnv.newGoBuildCommand("build",
 		"-o", absOutputFile,
 	)
 	if b.Debug {

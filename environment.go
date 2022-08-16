@@ -100,11 +100,12 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 		timeoutGoGet:    b.TimeoutGet,
 		skipCleanup:     b.SkipCleanup,
 		buildFlags:      b.BuildFlags,
+		modFlags:        b.ModFlags,
 	}
 
 	// initialize the go module
 	log.Println("[INFO] Initializing Go module")
-	cmd := env.newGoCommand("mod", "init")
+	cmd := env.newGoModCommand("init")
 	cmd.Args = append(cmd.Args, "caddy")
 	err = env.runCommand(ctx, cmd, 10*time.Second)
 	if err != nil {
@@ -115,7 +116,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	replaced := make(map[string]string)
 	for _, r := range b.Replacements {
 		log.Printf("[INFO] Replace %s => %s", r.Old.String(), r.New.String())
-		cmd := env.newGoCommand("mod", "edit",
+		cmd := env.newGoModCommand("edit",
 			"-replace", fmt.Sprintf("%s=%s", r.Old.Param(), r.New.Param()))
 		err := env.runCommand(ctx, cmd, 10*time.Second)
 		if err != nil {
@@ -181,6 +182,7 @@ type environment struct {
 	timeoutGoGet    time.Duration
 	skipCleanup     bool
 	buildFlags      string
+	modFlags        string
 }
 
 // Close cleans up the build environment, including deleting
@@ -194,22 +196,40 @@ func (env environment) Close() error {
 	return os.RemoveAll(env.tempFolder)
 }
 
-func (env environment) newGoCommand(args ...string) *exec.Cmd {
-	cmd := exec.Command(utils.GetGo(), args...)
+func (env environment) newCommand(command string, args ...string) *exec.Cmd {
+	cmd := exec.Command(command, args...)
 	cmd.Dir = env.tempFolder
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	return cmd
+}
 
-	if env.buildFlags == "" {
+// newGoBuildCommand creates a new *exec.Cmd which assumes the first element in `args` is one of: build, clean, get, install, list, run, or test. The
+// created command will also have the value of `XCADDY_GO_BUILD_FLAGS` appended to its arguments, if set.
+func (env environment) newGoBuildCommand(args ...string) *exec.Cmd {
+	cmd := env.newCommand(utils.GetGo(), args...)
+	return parseAndAppendFlags(cmd, env.buildFlags)
+}
+
+// newGoModCommand creates a new *exec.Cmd which assumes `args` are the args for `go mod` command. The
+// created command will also have the value of `XCADDY_GO_MOD_FLAGS` appended to its arguments, if set.
+func (env environment) newGoModCommand(args ...string) *exec.Cmd {
+	args = append([]string{"mod"}, args...)
+	cmd := env.newCommand(utils.GetGo(), args...)
+	return parseAndAppendFlags(cmd, env.modFlags)
+}
+
+func parseAndAppendFlags(cmd *exec.Cmd, flags string) *exec.Cmd {
+	if strings.TrimSpace(flags) == "" {
 		return cmd
 	}
 
-	flags, err := shlex.Split(env.buildFlags)
+	fs, err := shlex.Split(flags)
 	if err != nil {
-		log.Printf("[ERROR] Splitting arguments failed: %s", env.buildFlags)
+		log.Printf("[ERROR] Splitting arguments failed: %s", flags)
 		return cmd
 	}
-	cmd.Args = append(cmd.Args, flags...)
+	cmd.Args = append(cmd.Args, fs...)
 
 	return cmd
 }
@@ -276,7 +296,7 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion,
 		caddy += "@" + caddyVersion
 	}
 
-	cmd := env.newGoCommand("get", "-d", "-v")
+	cmd := env.newGoBuildCommand("get", "-d", "-v")
 	// using an empty string as an additional argument to "go get"
 	// breaks the command since it treats the empty string as a
 	// distinct argument, so we're using an if statement to avoid it.
