@@ -104,7 +104,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// initialize the go module
 	log.Println("[INFO] Initializing Go module")
-	cmd := env.newCommand(utils.GetGo(), "mod", "init")
+	cmd := env.newGoCommand("mod", "init")
 	cmd.Args = append(cmd.Args, "caddy")
 	err = env.runCommand(ctx, cmd, 10*time.Second)
 	if err != nil {
@@ -115,7 +115,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	replaced := make(map[string]string)
 	for _, r := range b.Replacements {
 		log.Printf("[INFO] Replace %s => %s", r.Old.String(), r.New.String())
-		cmd := env.newCommand(utils.GetGo(), "mod", "edit",
+		cmd := env.newGoCommand("mod", "edit",
 			"-replace", fmt.Sprintf("%s=%s", r.Old.Param(), r.New.Param()))
 		err := env.runCommand(ctx, cmd, 10*time.Second)
 		if err != nil {
@@ -194,8 +194,8 @@ func (env environment) Close() error {
 	return os.RemoveAll(env.tempFolder)
 }
 
-func (env environment) newCommand(command string, args ...string) *exec.Cmd {
-	cmd := exec.Command(command, args...)
+func (env environment) newGoCommand(args ...string) *exec.Cmd {
+	cmd := exec.Command(utils.GetGo(), args...)
 	cmd.Dir = env.tempFolder
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -276,7 +276,7 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion,
 		caddy += "@" + caddyVersion
 	}
 
-	cmd := env.newCommand(utils.GetGo(), "get", "-d", "-v")
+	cmd := env.newGoCommand("get", "-d", "-v")
 	// using an empty string as an additional argument to "go get"
 	// breaks the command since it treats the empty string as a
 	// distinct argument, so we're using an if statement to avoid it.

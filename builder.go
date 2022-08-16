@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/caddyserver/xcaddy/internal/utils"
 )
 
 // Builder can produce a custom Caddy build with the
@@ -103,13 +102,13 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	log.Println("[INFO] Building Caddy")
 
 	// tidy the module to ensure go.mod and go.sum are consistent with the module prereq
-	tidyCmd := buildEnv.newCommand(utils.GetGo(), "mod", "tidy")
+	tidyCmd := buildEnv.newGoCommand("mod", "tidy")
 	if err := buildEnv.runCommand(ctx, tidyCmd, b.TimeoutGet); err != nil {
 		return err
 	}
 
 	// compile
-	cmd := buildEnv.newCommand(utils.GetGo(), "build",
+	cmd := buildEnv.newGoCommand("build",
 		"-o", absOutputFile,
 	)
 	if b.Debug {
