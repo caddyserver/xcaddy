@@ -89,6 +89,9 @@ You can even replace Caddy core using the `--with` flag:
 ```
 $ xcaddy build \
     --with github.com/caddyserver/caddy/v2=../../my-caddy-fork
+    
+$ xcaddy build \
+    --with github.com/caddyserver/caddy/v2=github.com/my-user/caddy/v2@some-branch
 ```
 
 This allows you to hack on Caddy core (and optionally plug in extra modules at the same time!) with relative ease.
