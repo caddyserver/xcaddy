@@ -164,10 +164,11 @@ func runBuild(ctx context.Context, args []string) error {
 }
 
 func getCaddyOutputFile() string {
+	f := "." + string(filepath.Separator) + "caddy"
 	if runtime.GOOS == "windows" {
-		return "caddy.exe"
+		f += ".exe"
 	}
-	return "." + string(filepath.Separator) + "caddy"
+	return f
 }
 
 func runDev(ctx context.Context, args []string) error {
