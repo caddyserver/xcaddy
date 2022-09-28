@@ -292,8 +292,6 @@ func parseGoListJson(out []byte) (currentModule, moduleDir string, replacements 
 			continue
 		}
 
-		src := mod.Path + "@" + mod.Version
-
 		// 1. Target is module, version is required in this case
 		// 2A. Target is absolute path
 		// 2B. Target is relative path, proper handling is required in this case
@@ -315,7 +313,7 @@ func parseGoListJson(out []byte) (currentModule, moduleDir string, replacements 
 			}
 		}
 
-		replacements = append(replacements, xcaddy.NewReplace(src, dst))
+		replacements = append(replacements, xcaddy.NewReplace(mod.Path, dst))
 	}
 	for _, idx := range unjoinedReplaces {
 		unresolved := string(replacements[idx].New)

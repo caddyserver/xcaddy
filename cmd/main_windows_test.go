@@ -99,12 +99,12 @@ func TestParseGoListJson(t *testing.T) {
 		t.Errorf("Unexpected module path")
 	}
 	expected := []xcaddy.Replace{
-		xcaddy.NewReplace("replacetest1@v1.2.3", "golang.org/x/example@v0.0.0-20210811190340-787a929d5a0d"),
-		xcaddy.NewReplace("replacetest2@v0.0.1", "golang.org/x/example@v0.0.0-20210407023211-09c3a5e06b5d"),
-		xcaddy.NewReplace("replacetest3@v1.2.3", "C:\\Users\\work\\module\\fork1"),
+		xcaddy.NewReplace("replacetest1", "golang.org/x/example@v0.0.0-20210811190340-787a929d5a0d"),
+		xcaddy.NewReplace("replacetest2", "golang.org/x/example@v0.0.0-20210407023211-09c3a5e06b5d"),
+		xcaddy.NewReplace("replacetest3", "C:\\Users\\work\\module\\fork1"),
 		xcaddy.NewReplace("github.com/simnalamburt/module", "C:\\Users\\work\\module"),
-		xcaddy.NewReplace("replacetest4@v0.0.1", "C:\\go\\fork2"),
-		xcaddy.NewReplace("replacetest5@v1.2.3", "C:\\Users\\work\\module\\fork3"),
+		xcaddy.NewReplace("replacetest4", "C:\\go\\fork2"),
+		xcaddy.NewReplace("replacetest5", "C:\\Users\\work\\module\\fork3"),
 	}
 	if !reflect.DeepEqual(replacements, expected) {
 		t.Errorf("Expected replacements '%v' but got '%v'", expected, replacements)
