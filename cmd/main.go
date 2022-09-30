@@ -183,7 +183,7 @@ func runDev(ctx context.Context, args []string) error {
 	// and since this tool is a carry-through for the user's actual
 	// go.mod, we need to transfer their replace directives through
 	// to the one we're making
-	cmd := exec.Command(utils.GetGo(), "list", "-m", "-json", "all")
+	cmd := exec.Command(utils.GetGo(), "list", "-mod=readonly", "-m", "-json", "all")
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
@@ -318,7 +318,7 @@ func parseGoListJson(out []byte) (currentModule, moduleDir string, replacements 
 	for _, idx := range unjoinedReplaces {
 		unresolved := string(replacements[idx].New)
 		resolved := filepath.Join(moduleDir, unresolved)
-		log.Printf("[INFO] Resolved relative replacement %s to %s", unresolved, resolved)
+		log.Printf("[INFO] Resolved previously-unjoined relative replacement %s to %s", unresolved, resolved)
 		replacements[idx].New = xcaddy.ReplacementPath(resolved)
 	}
 	return

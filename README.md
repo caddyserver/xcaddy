@@ -42,6 +42,8 @@ The `xcaddy` command will use the latest version of Caddy by default. You can cu
 
 As usual with `go` command, the `xcaddy` command will pass the `GOOS`, `GOARCH`, and `GOARM` environment variables through for cross-compilation.
 
+Note that `xcaddy` will ignore the `vendor/` folder with `-mod=readonly`.
+
 
 ### Custom builds
 
