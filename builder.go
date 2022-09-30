@@ -17,7 +17,6 @@ package xcaddy
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -227,7 +226,7 @@ func newTempFolder() (string, error) {
 		}
 	}
 	ts := time.Now().Format(yearMonthDayHourMin)
-	return ioutil.TempDir(parentDir, fmt.Sprintf("buildenv_%s.", ts))
+	return os.MkdirTemp(parentDir, fmt.Sprintf("buildenv_%s.", ts))
 }
 
 // versionedModulePath helps enforce Go Module's Semantic Import Versioning (SIV) by

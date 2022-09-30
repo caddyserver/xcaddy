@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -87,7 +86,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	// write the main module file to temporary folder
 	mainPath := filepath.Join(tempFolder, "main.go")
 	log.Printf("[INFO] Writing main module: %s\n%s", mainPath, buf.Bytes())
-	err = ioutil.WriteFile(mainPath, buf.Bytes(), 0644)
+	err = os.WriteFile(mainPath, buf.Bytes(), 0644)
 	if err != nil {
 		return nil, err
 	}
