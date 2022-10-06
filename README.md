@@ -31,6 +31,15 @@ sudo apt update
 sudo apt install xcaddy
 ```
 
+## :warning: Pro tip
+
+If you find yourself fighting xcaddy in relation to your custom or proprietary build or development process, **it might be easier to just build Caddy manually!**
+
+Caddy's [main.go file](https://github.com/caddyserver/caddy/blob/master/cmd/caddy/main.go), the main entry point to the application, has instructions in the comments explaining how to build Caddy essentially the same way xcaddy does it. But when you use the `go` command directly, you have more control over the whole thing and it may save you a lot of trouble.
+
+The manual build procedure is very easy: just copy the main.go into a new folder, initialize a Go module, plug in your plugins (add an `import` for each one) and then run `go build`. Of course, you may wish to customize the go.mod file to your liking (specific dependency versions, replacements, etc).
+
+
 ## Command usage
 
 The `xcaddy` command has two primary uses:
