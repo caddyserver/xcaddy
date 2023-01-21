@@ -144,6 +144,21 @@ func runBuild(ctx context.Context, args []string) error {
 		log.Fatalf("[FATAL] %v", err)
 	}
 
+	if os.Getenv("XCADDY_SETCAP") == "1" {
+		var cmd *exec.Cmd
+		if os.Getenv("XCADDY_SETCAP_NO_SUDO") == "1" {
+			cmd = exec.Command("setcap", "cap_net_bind_service=+ep", output)
+		} else {
+			cmd = exec.Command("sudo", "setcap", "cap_net_bind_service=+ep", output)
+		}
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		log.Printf("[INFO] Setting capabilities (requires admin privileges): %v", cmd.Args)
+		if err = cmd.Run(); err != nil {
+			return err
+		}
+	}
+
 	// prove the build is working by printing the version
 	if runtime.GOOS == os.Getenv("GOOS") && runtime.GOARCH == os.Getenv("GOARCH") {
 		if !filepath.IsAbs(output) {
@@ -224,7 +239,12 @@ func runDev(ctx context.Context, args []string) error {
 	}
 
 	if os.Getenv("XCADDY_SETCAP") == "1" {
-		cmd = exec.Command("sudo", "setcap", "cap_net_bind_service=+ep", binOutput)
+		var cmd *exec.Cmd
+		if os.Getenv("XCADDY_SETCAP_NO_SUDO") == "1" {
+			cmd = exec.Command("setcap", "cap_net_bind_service=+ep", binOutput)
+		} else {
+			cmd = exec.Command("sudo", "setcap", "cap_net_bind_service=+ep", binOutput)
+		}
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		log.Printf("[INFO] Setting capabilities (requires admin privileges): %v", cmd.Args)
