@@ -144,19 +144,10 @@ func runBuild(ctx context.Context, args []string) error {
 		log.Fatalf("[FATAL] %v", err)
 	}
 
-	if os.Getenv("XCADDY_SETCAP") == "1" {
-		var cmd *exec.Cmd
-		if os.Getenv("XCADDY_SETCAP_NO_SUDO") == "1" {
-			cmd = exec.Command("setcap", "cap_net_bind_service=+ep", output)
-		} else {
-			cmd = exec.Command("sudo", "setcap", "cap_net_bind_service=+ep", output)
-		}
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		log.Printf("[INFO] Setting capabilities (requires admin privileges): %v", cmd.Args)
-		if err = cmd.Run(); err != nil {
-			return err
-		}
+	// if requested, run setcap to allow binding to low ports
+	err = setcapIfRequested(output)
+	if err != nil {
+		return err
 	}
 
 	// prove the build is working by printing the version
@@ -238,19 +229,10 @@ func runDev(ctx context.Context, args []string) error {
 		return err
 	}
 
-	if os.Getenv("XCADDY_SETCAP") == "1" {
-		var cmd *exec.Cmd
-		if os.Getenv("XCADDY_SETCAP_NO_SUDO") == "1" {
-			cmd = exec.Command("setcap", "cap_net_bind_service=+ep", binOutput)
-		} else {
-			cmd = exec.Command("sudo", "setcap", "cap_net_bind_service=+ep", binOutput)
-		}
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		log.Printf("[INFO] Setting capabilities (requires admin privileges): %v", cmd.Args)
-		if err = cmd.Run(); err != nil {
-			return err
-		}
+	// if requested, run setcap to allow binding to low ports
+	err = setcapIfRequested(binOutput)
+	if err != nil {
+		return err
 	}
 
 	log.Printf("[INFO] Running %v\n\n", append([]string{binOutput}, args...))
@@ -275,6 +257,34 @@ func runDev(ctx context.Context, args []string) error {
 	}()
 
 	return cmd.Wait()
+}
+
+func setcapIfRequested(output string) error {
+	if os.Getenv("XCADDY_SETCAP") != "1" {
+		return nil
+	}
+
+	args := []string{"setcap", "cap_net_bind_service=+ep", output}
+
+	// check if sudo isn't available, or we were instructed not to use it
+	_, sudoNotFound := exec.LookPath("sudo")
+	skipSudo := sudoNotFound != nil || os.Getenv("XCADDY_SETCAP_NO_SUDO") == "1"
+
+	var cmd *exec.Cmd
+	if skipSudo {
+		cmd = exec.Command(args[0], args[1:]...)
+	} else {
+		cmd = exec.Command("sudo", args...)
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	log.Printf("[INFO] Setting capabilities (requires admin privileges): %v", cmd.Args)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to setcap on the binary: %v", err)
+	}
+
+	return nil
 }
 
 type module struct {
