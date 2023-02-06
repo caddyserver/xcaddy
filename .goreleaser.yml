@@ -34,9 +34,9 @@ builds:
   - s390x
   - ppc64le
   goarm:
-  - 5
-  - 6
-  - 7
+  - "5"
+  - "6"
+  - "7"
   ignore:
     - goos: darwin
       goarch: arm
@@ -54,7 +54,7 @@ builds:
       goarch: s390x
     - goos: freebsd
       goarch: arm
-      goarm: 5
+      goarm: "5"
   flags:
   - -trimpath
   ldflags:
@@ -64,8 +64,15 @@ archives:
   - format_overrides:
       - goos: windows
         format: zip
-    replacements:
-      darwin: mac
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- if eq .Os "darwin" }}mac{{ else }}{{ .Os }}{{ end }}_
+      {{- .Arch }}
+      {{- with .Arm }}v{{ . }}{{ end }}
+      {{- with .Mips }}_{{ . }}{{ end }}
+      {{- if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}
+
 checksum:
   algorithm: sha512
 
