@@ -268,7 +268,7 @@ func setcapIfRequested(output string) error {
 
 	// check if sudo isn't available, or we were instructed not to use it
 	_, sudoNotFound := exec.LookPath("sudo")
-	skipSudo := sudoNotFound != nil || os.Getenv("XCADDY_SETCAP_NO_SUDO") == "1"
+	skipSudo := sudoNotFound != nil || os.Getenv("XCADDY_SUDO") == "0"
 
 	var cmd *exec.Cmd
 	if skipSudo {
