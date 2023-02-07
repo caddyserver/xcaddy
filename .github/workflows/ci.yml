@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
-        go: [ '1.17', '1.18' ]
+        go: [ '1.19', '1.20' ]
 
         # Set some variables per OS, usable via ${{ matrix.VAR }}
         # XCADDY_BIN_PATH: the path to the compiled xcaddy binary, for artifact publishing
