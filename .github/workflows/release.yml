@@ -48,7 +48,6 @@ jobs:
         env
         echo "version_tag=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
         echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-        echo "go_cache=$(go env GOCACHE)" >> $GITHUB_OUTPUT
 
         # Add "pip install" CLI tools to PATH
         echo ~/.local/bin >> $GITHUB_PATH
@@ -83,7 +82,16 @@ jobs:
     - name: Cache the build cache
       uses: actions/cache@v3
       with:
-        path: ${{ steps.vars.outputs.go_cache }}
+        # In order:
+        # * Module download cache
+        # * Build cache (Linux)
+        # * Build cache (Mac)
+        # * Build cache (Windows)
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+          ~/Library/Caches/go-build
+          ~\AppData\Local\go-build
         key: ${{ runner.os }}-go${{ matrix.go }}-release-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go${{ matrix.go }}-release
