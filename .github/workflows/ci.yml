@@ -60,7 +60,7 @@ jobs:
         echo "::set-output name=go_cache::$(go env GOCACHE)"
 
     - name: Cache the build cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ${{ steps.vars.outputs.go_cache }}
         key: ${{ runner.os }}-${{ matrix.go }}-go-ci-${{ hashFiles('**/go.sum') }}
@@ -83,7 +83,7 @@ jobs:
         ${{ matrix.XCADDY_BIN_PATH }} version
 
     - name: Publish Build Artifact
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
         name: xcaddy_${{ runner.os }}_go${{ matrix.go }}_${{ steps.vars.outputs.short_sha }}
         path: ${{ matrix.XCADDY_BIN_PATH }}
@@ -98,7 +98,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v3
 
-      - uses: goreleaser/goreleaser-action@v2
+      - uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
           args: check
