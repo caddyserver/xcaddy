@@ -104,9 +104,9 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// initialize the go module
 	log.Println("[INFO] Initializing Go module")
-	cmd := env.newGoModCommand("init")
+	cmd := env.newGoModCommand(ctx, "init")
 	cmd.Args = append(cmd.Args, "caddy")
-	err = env.runCommand(ctx, cmd, 10*time.Second)
+	err = env.runCommand(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -115,9 +115,9 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	replaced := make(map[string]string)
 	for _, r := range b.Replacements {
 		log.Printf("[INFO] Replace %s => %s", r.Old.String(), r.New.String())
-		cmd := env.newGoModCommand("edit",
+		cmd := env.newGoModCommand(ctx, "edit",
 			"-replace", fmt.Sprintf("%s=%s", r.Old.Param(), r.New.Param()))
-		err := env.runCommand(ctx, cmd, 10*time.Second)
+		err := env.runCommand(ctx, cmd)
 		if err != nil {
 			return nil, err
 		}
@@ -129,6 +129,14 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	default:
+	}
+
+	// The timeout for the `go get` command may be different than `go build`,
+	// so create a new context with the timeout for `go get`
+	if env.timeoutGoGet > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(context.Background(), env.timeoutGoGet)
+		defer cancel()
 	}
 
 	// pin versions by populating go.mod, first for Caddy itself and then plugins
@@ -195,8 +203,8 @@ func (env environment) Close() error {
 	return os.RemoveAll(env.tempFolder)
 }
 
-func (env environment) newCommand(command string, args ...string) *exec.Cmd {
-	cmd := exec.Command(command, args...)
+func (env environment) newCommand(ctx context.Context, command string, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Dir = env.tempFolder
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -205,16 +213,16 @@ func (env environment) newCommand(command string, args ...string) *exec.Cmd {
 
 // newGoBuildCommand creates a new *exec.Cmd which assumes the first element in `args` is one of: build, clean, get, install, list, run, or test. The
 // created command will also have the value of `XCADDY_GO_BUILD_FLAGS` appended to its arguments, if set.
-func (env environment) newGoBuildCommand(args ...string) *exec.Cmd {
-	cmd := env.newCommand(utils.GetGo(), args...)
+func (env environment) newGoBuildCommand(ctx context.Context, args ...string) *exec.Cmd {
+	cmd := env.newCommand(ctx, utils.GetGo(), args...)
 	return parseAndAppendFlags(cmd, env.buildFlags)
 }
 
 // newGoModCommand creates a new *exec.Cmd which assumes `args` are the args for `go mod` command. The
 // created command will also have the value of `XCADDY_GO_MOD_FLAGS` appended to its arguments, if set.
-func (env environment) newGoModCommand(args ...string) *exec.Cmd {
+func (env environment) newGoModCommand(ctx context.Context, args ...string) *exec.Cmd {
 	args = append([]string{"mod"}, args...)
-	cmd := env.newCommand(utils.GetGo(), args...)
+	cmd := env.newCommand(ctx, utils.GetGo(), args...)
 	return parseAndAppendFlags(cmd, env.modFlags)
 }
 
@@ -233,14 +241,9 @@ func parseAndAppendFlags(cmd *exec.Cmd, flags string) *exec.Cmd {
 	return cmd
 }
 
-func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd, timeout time.Duration) error {
-	log.Printf("[INFO] exec (timeout=%s): %+v ", timeout, cmd)
-
-	if timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
-	}
+func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd) error {
+	deadline, _ := ctx.Deadline()
+	log.Printf("[INFO] exec (timeout=%s): %+v ", time.Until(deadline), cmd)
 
 	// start the command; if it fails to start, report error immediately
 	err := cmd.Start()
@@ -295,7 +298,7 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion,
 		caddy += "@" + caddyVersion
 	}
 
-	cmd := env.newGoBuildCommand("get", "-d", "-v")
+	cmd := env.newGoBuildCommand(ctx, "get", "-d", "-v")
 	// using an empty string as an additional argument to "go get"
 	// breaks the command since it treats the empty string as a
 	// distinct argument, so we're using an if statement to avoid it.
@@ -305,7 +308,7 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion,
 		cmd.Args = append(cmd.Args, mod)
 	}
 
-	return env.runCommand(ctx, cmd, env.timeoutGoGet)
+	return env.runCommand(ctx, cmd)
 }
 
 type goModTemplateContext struct {
