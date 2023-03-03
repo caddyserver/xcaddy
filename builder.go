@@ -50,6 +50,11 @@ type Builder struct {
 // Build builds Caddy at the configured version with the
 // configured plugins and plops down a binary at outputFile.
 func (b Builder) Build(ctx context.Context, outputFile string) error {
+	var cancel context.CancelFunc
+	if b.TimeoutBuild > 0 {
+		ctx, cancel = context.WithTimeout(ctx, b.TimeoutBuild)
+		defer cancel()
+	}
 	if outputFile == "" {
 		return fmt.Errorf("output file path is required")
 	}
@@ -102,13 +107,13 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	log.Println("[INFO] Building Caddy")
 
 	// tidy the module to ensure go.mod and go.sum are consistent with the module prereq
-	tidyCmd := buildEnv.newGoModCommand("tidy")
-	if err := buildEnv.runCommand(ctx, tidyCmd, b.TimeoutGet); err != nil {
+	tidyCmd := buildEnv.newGoModCommand(ctx, "tidy")
+	if err := buildEnv.runCommand(ctx, tidyCmd); err != nil {
 		return err
 	}
 
 	// compile
-	cmd := buildEnv.newGoBuildCommand("build",
+	cmd := buildEnv.newGoBuildCommand(ctx, "build",
 		"-o", absOutputFile,
 	)
 	if b.Debug {
@@ -127,7 +132,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 		cmd.Args = append(cmd.Args, "-race")
 	}
 	cmd.Env = env
-	err = buildEnv.runCommand(ctx, cmd, b.TimeoutBuild)
+	err = buildEnv.runCommand(ctx, cmd)
 	if err != nil {
 		return err
 	}
