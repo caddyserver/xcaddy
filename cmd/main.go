@@ -264,7 +264,7 @@ func setcapIfRequested(output string) error {
 		return nil
 	}
 
-	args := []string{"setcap", "cap_net_bind_service=+ep", output}
+	args := []string{"setcap", "cap_net_admin,cap_net_bind_service=+ep", output}
 
 	// check if sudo isn't available, or we were instructed not to use it
 	_, sudoNotFound := exec.LookPath("sudo")
