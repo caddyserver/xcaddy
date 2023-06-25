@@ -242,8 +242,13 @@ func parseAndAppendFlags(cmd *exec.Cmd, flags string) *exec.Cmd {
 }
 
 func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd) error {
-	deadline, _ := ctx.Deadline()
-	log.Printf("[INFO] exec (timeout=%s): %+v ", time.Until(deadline), cmd)
+	deadline, ok := ctx.Deadline()
+	var timeout time.Duration
+	// context doesn't necessarily have a deadline
+	if ok {
+		timeout = time.Until(deadline)
+	}
+	log.Printf("[INFO] exec (timeout=%s): %+v ", timeout, cmd)
 
 	// start the command; if it fails to start, report error immediately
 	err := cmd.Start()
