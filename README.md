@@ -20,6 +20,10 @@ Stay updated, be aware of changes, and please submit feedback! Thanks!
 - Go
 - .deb
 
+### GitHub Releases
+
+You can [download binaries](https://github.com/caddyserver/xcaddy/releases) that are already compiled for your platform from the Release tab.
+
 ### Mac, Linux, & Windows
 
 [Webi](https://webinstall.dev/xcaddy) selects the correct download URL for you
@@ -38,8 +42,6 @@ curl.exe https://webi.ms/xcaddy@0.3 | powershell
 ```
 
 ### Go
-
-You can [download binaries](https://github.com/caddyserver/xcaddy/releases) that are already compiled for your platform from the Release tab. 
 
 You may also build `xcaddy` from source:
 
