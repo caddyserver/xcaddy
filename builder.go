@@ -47,7 +47,10 @@ type Builder struct {
 	ModFlags     string        `json:"mod_flags,omitempty"`
 
 	// Experimental: subject to change
-	EmbedDir string `json:"embed_dir,omitempty"`
+	EmbedDirs []struct {
+		Dir  string `json:"dir,omitempty"`
+		Name string `json:"name,omitempty"`
+	} `json:"embed_dir,omitempty"`
 }
 
 // Build builds Caddy at the configured version with the
