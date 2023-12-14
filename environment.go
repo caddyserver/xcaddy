@@ -102,9 +102,8 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 				return nil, fmt.Errorf("embed directory does not exist: %s", d.Dir)
 			}
 			log.Printf("[INFO] Embedding directory: %s", d.Dir)
-
-			var buf bytes.Buffer
-			tpl, err := template.New("embed").Parse(embeddedModuleTemplate)
+			buf.Reset()
+			tpl, err = template.New("embed").Parse(embeddedModuleTemplate)
 			if err != nil {
 				return nil, err
 			}
