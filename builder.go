@@ -45,6 +45,15 @@ type Builder struct {
 	Debug        bool          `json:"debug,omitempty"`
 	BuildFlags   string        `json:"build_flags,omitempty"`
 	ModFlags     string        `json:"mod_flags,omitempty"`
+
+	// Experimental: Inject extra imports into the build. These
+	// imports are to add Go modules that may be needed in the
+	// Prequels.
+	ExtraImports []string
+	// Experimental: Inject extra code before running Caddy's `main`.
+	// If any of the prequels requires an import, it's you responsibility
+	// to add the import to the ExtraImports slice.
+	Prequels []string
 }
 
 // Build builds Caddy at the configured version with the

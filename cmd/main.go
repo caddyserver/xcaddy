@@ -223,6 +223,8 @@ func runDev(ctx context.Context, args []string) error {
 		SkipBuild:    skipBuild,
 		SkipCleanup:  skipCleanup,
 		Debug:        buildDebugOutput,
+		ExtraImports: []string{`caddy	"github.com/caddyserver/caddy/v2"`, `"fmt"`, `"github.com/spf13/cobra"`},
+		Prequels:     []string{interfaceValidationCommand},
 	}
 	err = builder.Build(ctx, binOutput)
 	if err != nil {
@@ -439,3 +441,22 @@ func goModule() *debug.Module {
 	}
 	return mod
 }
+
+const interfaceValidationCommand = `
+	caddycmd.RegisterCommand(caddycmd.Command{
+		Name:  "validate-interfaces",
+		Short: "Validate that all modules conform to their namespaces",
+		CobraFunc: func(cmd *cobra.Command) {
+			cmd.RunE = caddycmd.WrapCommandFuncForCobra(func(f caddycmd.Flags) (int, error) {
+				for _, v := range caddy.Modules() {
+					mod, _ := caddy.GetModule(v)
+					if ok, err := caddy.ConformsToNamespace(mod.New(), mod.ID.Namespace()); !ok {
+						return caddy.ExitCodeFailedStartup, fmt.Errorf("module %s does not conform to its namespace: %v", mod.ID, err)
+					}
+				}
+				fmt.Println("All modules conform to their namespaces.")
+				return caddy.ExitCodeSuccess, nil
+			})
+		},
+	})
+`
