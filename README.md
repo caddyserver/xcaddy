@@ -62,6 +62,7 @@ Syntax:
 $ xcaddy build [<caddy_version>]
     [--output <file>]
     [--with <module[@version][=replacement]>...]
+    [--embed <[alias]:path/to/dir>...]
 ```
 
 - `<caddy_version>` is the core Caddy version to build; defaults to `CADDY_VERSION` env variable or latest.<br>
@@ -72,6 +73,7 @@ $ xcaddy build [<caddy_version>]
 
 - `--output` changes the output file.
 - `--with` can be used multiple times to add plugins by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional.
+- `--embed` can be used multiple times to embed directories into the built Caddy executable. The directory can be prefixed with a custom alias and a colon `:` to use it with the `root` directive and sub-directive. 
 
 Examples:
 
@@ -107,6 +109,24 @@ $ xcaddy build \
 
 This allows you to hack on Caddy core (and optionally plug in extra modules at the same time!) with relative ease.
 
+```
+$ xcaddy build --embed foo:./sites/foo --embed bar:./sites/bar
+$ cat Caddyfile
+foo.localhost {
+	root * /foo
+	file_server {
+		fs embedded
+	}
+}
+
+bar.localhost {
+	root * /bar
+	file_server {
+		fs embedded
+	}
+}
+```
+This allows you to serve 2 sites from 2 different embedded directories, which are referenced by aliases, from a single Caddy executable.
 
 ### For plugin development
 

@@ -45,6 +45,12 @@ type Builder struct {
 	Debug        bool          `json:"debug,omitempty"`
 	BuildFlags   string        `json:"build_flags,omitempty"`
 	ModFlags     string        `json:"mod_flags,omitempty"`
+
+	// Experimental: subject to change
+	EmbedDirs []struct {
+		Dir  string `json:"dir,omitempty"`
+		Name string `json:"name,omitempty"`
+	} `json:"embed_dir,omitempty"`
 }
 
 // Build builds Caddy at the configured version with the
@@ -66,6 +72,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("[INFO] absolute output file path: %s", absOutputFile)
 
 	// set some defaults from the environment, if applicable
 	if b.OS == "" {

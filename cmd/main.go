@@ -71,6 +71,7 @@ func runBuild(ctx context.Context, args []string) error {
 	var argCaddyVersion, output string
 	var plugins []xcaddy.Dependency
 	var replacements []xcaddy.Replace
+	var embedDir []string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--with":
@@ -105,7 +106,12 @@ func runBuild(ctx context.Context, args []string) error {
 			}
 			i++
 			output = args[i]
-
+		case "--embed":
+			if i == len(args)-1 {
+				return fmt.Errorf("expected value after --embed flag")
+			}
+			i++
+			embedDir = append(embedDir, args[i])
 		default:
 			if argCaddyVersion != "" {
 				return fmt.Errorf("missing flag; caddy version already set at %s", argCaddyVersion)
@@ -138,6 +144,23 @@ func runBuild(ctx context.Context, args []string) error {
 		Debug:        buildDebugOutput,
 		BuildFlags:   buildFlags,
 		ModFlags:     modFlags,
+	}
+	for _, md := range embedDir {
+		if before, after, found := strings.Cut(md, ":"); found {
+			builder.EmbedDirs = append(builder.EmbedDirs, struct {
+				Dir  string `json:"dir,omitempty"`
+				Name string `json:"name,omitempty"`
+			}{
+				after, before,
+			})
+		} else {
+			builder.EmbedDirs = append(builder.EmbedDirs, struct {
+				Dir  string `json:"dir,omitempty"`
+				Name string `json:"name,omitempty"`
+			}{
+				before, "",
+			})
+		}
 	}
 	err := builder.Build(ctx, output)
 	if err != nil {
