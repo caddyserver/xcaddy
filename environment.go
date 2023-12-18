@@ -51,7 +51,9 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// create the context for the main module template
 	tplCtx := goModTemplateContext{
-		CaddyModule: caddyModulePath,
+		CaddyModule:  caddyModulePath,
+		ExtraImports: b.ExtraImports,
+		Prequels:     b.Prequels,
 	}
 	for _, p := range b.Plugins {
 		tplCtx.Plugins = append(tplCtx.Plugins, p.PackagePath)
@@ -86,7 +88,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	// write the main module file to temporary folder
 	mainPath := filepath.Join(tempFolder, "main.go")
 	log.Printf("[INFO] Writing main module: %s\n%s", mainPath, buf.Bytes())
-	err = os.WriteFile(mainPath, buf.Bytes(), 0644)
+	err = os.WriteFile(mainPath, buf.Bytes(), 0o644)
 	if err != nil {
 		return nil, err
 	}
@@ -317,8 +319,10 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion,
 }
 
 type goModTemplateContext struct {
-	CaddyModule string
-	Plugins     []string
+	CaddyModule  string
+	Plugins      []string
+	ExtraImports []string
+	Prequels     []string
 }
 
 const mainModuleTemplate = `package main
@@ -331,9 +335,15 @@ import (
 	{{- range .Plugins}}
 	_ "{{.}}"
 	{{- end}}
+	{{- range .ExtraImports}}
+	{{.}}
+	{{- end}}
 )
 
 func main() {
+	{{- range .Prequels}}
+	{{.}}
+	{{- end}}
 	caddycmd.Main()
 }
 `
