@@ -91,7 +91,7 @@ jobs:
         ${{ matrix.XCADDY_BIN_PATH }} version
 
     - name: Publish Build Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: xcaddy_${{ runner.os }}_go${{ matrix.go }}_${{ steps.vars.outputs.short_sha }}
         path: ${{ matrix.XCADDY_BIN_PATH }}
