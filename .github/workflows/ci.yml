@@ -95,6 +95,7 @@ jobs:
       with:
         name: xcaddy_${{ runner.os }}_go${{ matrix.go }}_${{ steps.vars.outputs.short_sha }}
         path: ${{ matrix.XCADDY_BIN_PATH }}
+        compression-level: 0
 
     - name: Run tests
       run: |
