@@ -353,8 +353,12 @@ type goModTemplateContext struct {
 const mainModuleTemplate = `package main
 
 import (
+	"go.uber.org/automaxprocs/maxprocs"
+	"go.uber.org/zap"
+
 	caddycmd "{{.CaddyModule}}/cmd"
 
+	"{{.CaddyModule}}"
 	// plug in Caddy modules here
 	_ "{{.CaddyModule}}/modules/standard"
 	{{- range .Plugins}}
@@ -363,6 +367,12 @@ import (
 )
 
 func main() {
+	undo, err := maxprocs.Set()
+	defer undo()
+	if err != nil {
+		caddy.Log().Warn("failed to set GOMAXPROCS", zap.Error(err))
+	}
+
 	caddycmd.Main()
 }
 `
