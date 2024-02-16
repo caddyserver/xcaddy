@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
-        go: [ '1.20', '1.21' ]
+        go: [ '1.21', '1.22' ]
 
         # Set some variables per OS, usable via ${{ matrix.VAR }}
         # XCADDY_BIN_PATH: the path to the compiled xcaddy binary, for artifact publishing
@@ -107,6 +107,19 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
+
+      - name: Print Go version and environment
+        id: vars
+        shell: bash
+        run: |
+          printf "Using go at: $(which go)\n"
+          printf "Go version: $(go version)\n"
+          printf "\n\nGo environment:\n\n"
+          go env
+          printf "\n\nSystem environment:\n\n"
+          env
+          # Calculate the short SHA1 hash of the git commit
+          echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - uses: goreleaser/goreleaser-action@v5
         with:
