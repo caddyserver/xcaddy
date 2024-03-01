@@ -31,7 +31,6 @@ import (
 	"strings"
 
 	"github.com/caddyserver/xcaddy"
-	"github.com/caddyserver/xcaddy/internal/utils"
 )
 
 var (
@@ -49,147 +48,10 @@ func Main() {
 	defer cancel()
 	go trapSignals(ctx, cancel)
 
-	if len(os.Args) > 1 && os.Args[1] == "build" {
-		if err := runBuild(ctx, os.Args[2:]); err != nil {
-			log.Fatalf("[ERROR] %v", err)
-		}
-		return
-	}
-
-	if len(os.Args) > 1 && os.Args[1] == "version" {
-		fmt.Println(xcaddyVersion())
-		return
-	}
-
-	if err := runDev(ctx, os.Args[1:]); err != nil {
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		log.Fatalf("[ERROR] %v", err)
-	}
-}
 
-func runBuild(ctx context.Context, args []string) error {
-	// parse the command line args... rather primitively
-	var argCaddyVersion, output string
-	var plugins []xcaddy.Dependency
-	var replacements []xcaddy.Replace
-	var embedDir []string
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--with":
-			if i == len(args)-1 {
-				return fmt.Errorf("expected value after --with flag")
-			}
-			i++
-			mod, ver, repl, err := splitWith(args[i])
-			if err != nil {
-				return err
-			}
-			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
-			plugins = append(plugins, xcaddy.Dependency{
-				PackagePath: mod,
-				Version:     ver,
-			})
-			if repl != "" {
-				// adjust relative replacements in current working directory since our temporary module is in a different directory
-				if strings.HasPrefix(repl, ".") {
-					repl, err = filepath.Abs(repl)
-					if err != nil {
-						log.Fatalf("[FATAL] %v", err)
-					}
-					log.Printf("[INFO] Resolved relative replacement %s to %s", args[i], repl)
-				}
-				replacements = append(replacements, xcaddy.NewReplace(mod, repl))
-			}
-
-		case "--output":
-			if i == len(args)-1 {
-				return fmt.Errorf("expected value after --output flag")
-			}
-			i++
-			output = args[i]
-		case "--embed":
-			if i == len(args)-1 {
-				return fmt.Errorf("expected value after --embed flag")
-			}
-			i++
-			embedDir = append(embedDir, args[i])
-		default:
-			if argCaddyVersion != "" {
-				return fmt.Errorf("missing flag; caddy version already set at %s", argCaddyVersion)
-			}
-			argCaddyVersion = args[i]
-		}
 	}
-
-	// prefer caddy version from command line argument over env var
-	if argCaddyVersion != "" {
-		caddyVersion = argCaddyVersion
-	}
-
-	// ensure an output file is always specified
-	if output == "" {
-		output = getCaddyOutputFile()
-	}
-
-	// perform the build
-	builder := xcaddy.Builder{
-		Compile: xcaddy.Compile{
-			Cgo: os.Getenv("CGO_ENABLED") == "1",
-		},
-		CaddyVersion: caddyVersion,
-		Plugins:      plugins,
-		Replacements: replacements,
-		RaceDetector: raceDetector,
-		SkipBuild:    skipBuild,
-		SkipCleanup:  skipCleanup,
-		Debug:        buildDebugOutput,
-		BuildFlags:   buildFlags,
-		ModFlags:     modFlags,
-	}
-	for _, md := range embedDir {
-		if before, after, found := strings.Cut(md, ":"); found {
-			builder.EmbedDirs = append(builder.EmbedDirs, struct {
-				Dir  string `json:"dir,omitempty"`
-				Name string `json:"name,omitempty"`
-			}{
-				after, before,
-			})
-		} else {
-			builder.EmbedDirs = append(builder.EmbedDirs, struct {
-				Dir  string `json:"dir,omitempty"`
-				Name string `json:"name,omitempty"`
-			}{
-				before, "",
-			})
-		}
-	}
-	err := builder.Build(ctx, output)
-	if err != nil {
-		log.Fatalf("[FATAL] %v", err)
-	}
-
-	// if requested, run setcap to allow binding to low ports
-	err = setcapIfRequested(output)
-	if err != nil {
-		return err
-	}
-
-	// prove the build is working by printing the version
-	if runtime.GOOS == os.Getenv("GOOS") && runtime.GOARCH == os.Getenv("GOARCH") {
-		if !filepath.IsAbs(output) {
-			output = "." + string(filepath.Separator) + output
-		}
-		fmt.Println()
-		fmt.Printf("%s version\n", output)
-		cmd := exec.Command(output, "version")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
-		if err != nil {
-			log.Fatalf("[FATAL] %v", err)
-		}
-	}
-
-	return nil
 }
 
 func getCaddyOutputFile() string {
@@ -198,88 +60,6 @@ func getCaddyOutputFile() string {
 		f += ".exe"
 	}
 	return f
-}
-
-func runDev(ctx context.Context, args []string) error {
-	binOutput := getCaddyOutputFile()
-
-	// get current/main module name and the root directory of the main module
-	//
-	// make sure the module being developed is replaced
-	// so that the local copy is used
-	//
-	// replace directives only apply to the top-level/main go.mod,
-	// and since this tool is a carry-through for the user's actual
-	// go.mod, we need to transfer their replace directives through
-	// to the one we're making
-	cmd := exec.Command(utils.GetGo(), "list", "-mod=readonly", "-m", "-json", "all")
-	cmd.Stderr = os.Stderr
-	out, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
-	}
-	currentModule, moduleDir, replacements, err := parseGoListJson(out)
-	if err != nil {
-		return fmt.Errorf("json parse error: %v", err)
-	}
-
-	// reconcile remaining path segments; for example if a module foo/a
-	// is rooted at directory path /home/foo/a, but the current directory
-	// is /home/foo/a/b, then the package to import should be foo/a/b
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("unable to determine current directory: %v", err)
-	}
-	importPath := normalizeImportPath(currentModule, cwd, moduleDir)
-
-	// build caddy with this module plugged in
-	builder := xcaddy.Builder{
-		Compile: xcaddy.Compile{
-			Cgo: os.Getenv("CGO_ENABLED") == "1",
-		},
-		CaddyVersion: caddyVersion,
-		Plugins: []xcaddy.Dependency{
-			{PackagePath: importPath},
-		},
-		Replacements: replacements,
-		RaceDetector: raceDetector,
-		SkipBuild:    skipBuild,
-		SkipCleanup:  skipCleanup,
-		Debug:        buildDebugOutput,
-	}
-	err = builder.Build(ctx, binOutput)
-	if err != nil {
-		return err
-	}
-
-	// if requested, run setcap to allow binding to low ports
-	err = setcapIfRequested(binOutput)
-	if err != nil {
-		return err
-	}
-
-	log.Printf("[INFO] Running %v\n\n", append([]string{binOutput}, args...))
-
-	cmd = exec.Command(binOutput, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Start()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if skipCleanup {
-			log.Printf("[INFO] Skipping cleanup as requested; leaving artifact: %s", binOutput)
-			return
-		}
-		err = os.Remove(binOutput)
-		if err != nil && !os.IsNotExist(err) {
-			log.Printf("[ERROR] Deleting temporary binary %s: %v", binOutput, err)
-		}
-	}()
-
-	return cmd.Wait()
 }
 
 func setcapIfRequested(output string) error {
