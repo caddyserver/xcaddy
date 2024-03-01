@@ -20,7 +20,7 @@ jobs:
           go-version: '1.22.x'
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v4
         with:
           version: 'latest'
           # Optional: show only new issues if it's a pull request. The default value is `false`.
