@@ -144,13 +144,18 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	replaced := make(map[string]string)
 	for _, r := range b.Replacements {
 		log.Printf("[INFO] Replace %s => %s", r.Old.String(), r.New.String())
-		cmd := env.newGoModCommand(ctx, "edit",
-			"-replace", fmt.Sprintf("%s=%s", r.Old.Param(), r.New.Param()))
+		
+		replaced[r.Old.String()] = r.New.String()
+	}
+	if len(replaced) > 0 {
+		cmd := env.newGoModCommand(ctx, "edit")
+		for o, n := range replaced {
+			cmd.Args = append(cmd.Args, "-replace", fmt.Sprintf("%s=%s", o, n))
+		}
 		err := env.runCommand(ctx, cmd)
 		if err != nil {
 			return nil, err
 		}
-		replaced[r.Old.String()] = r.New.String()
 	}
 
 	// check for early abort
