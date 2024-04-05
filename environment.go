@@ -144,7 +144,6 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	replaced := make(map[string]string)
 	for _, r := range b.Replacements {
 		log.Printf("[INFO] Replace %s => %s", r.Old.String(), r.New.String())
-		
 		replaced[r.Old.String()] = r.New.String()
 	}
 	if len(replaced) > 0 {
