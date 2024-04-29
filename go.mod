@@ -1,6 +1,6 @@
 module github.com/caddyserver/xcaddy
 
-go 1.14
+go 1.22
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1

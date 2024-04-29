@@ -16,6 +16,7 @@ package xcaddycmd
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -194,8 +195,8 @@ func runBuild(ctx context.Context, args []string) error {
 
 func getCaddyOutputFile() string {
 	f := "." + string(filepath.Separator) + "caddy"
-	// compiling on or for Windows, use .exe extension
-	if runtime.GOOS == "windows" || os.Getenv("GOOS") == "windows" {
+	// compiling for Windows or compiling on windows without setting GOOS, use .exe extension
+	if cmp.Or(os.Getenv("GOOS"), runtime.GOOS) == "windows" {
 		f += ".exe"
 	}
 	return f
