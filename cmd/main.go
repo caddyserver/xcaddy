@@ -194,7 +194,8 @@ func runBuild(ctx context.Context, args []string) error {
 
 func getCaddyOutputFile() string {
 	f := "." + string(filepath.Separator) + "caddy"
-	if runtime.GOOS == "windows" {
+	// compiling for Windows or compiling on windows without setting GOOS, use .exe extension
+	if os.Getenv("GOOS") == "windows" || (os.Getenv("GOOS") == "" && runtime.GOOS == "windows") {
 		f += ".exe"
 	}
 	return f
