@@ -127,7 +127,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 		tempFolder:      tempFolder,
 		timeoutGoGet:    b.TimeoutGet,
 		skipCleanup:     b.SkipCleanup,
-		buildFlags:      strings.TrimSpace("-tags nobadger " + b.BuildFlags),
+		buildFlags:      b.BuildFlags,
 		modFlags:        b.ModFlags,
 	}
 
