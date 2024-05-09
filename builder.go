@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/caddyserver/xcaddy/internal/utils"
 )
 
 // Builder can produce a custom Caddy build with the
@@ -76,10 +77,10 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 
 	// set some defaults from the environment, if applicable
 	if b.OS == "" {
-		b.OS = os.Getenv("GOOS")
+		b.OS = utils.GetGOOS()
 	}
 	if b.Arch == "" {
-		b.Arch = os.Getenv("GOARCH")
+		b.Arch = utils.GetGOARCH()
 	}
 	if b.ARM == "" {
 		b.ARM = os.Getenv("GOARM")
