@@ -3,11 +3,12 @@ package utils
 import (
 	"embed"
 	"fmt"
-	"github.com/Masterminds/semver/v3"
-	"github.com/josephspurrier/goversioninfo"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Masterminds/semver/v3"
+	"github.com/josephspurrier/goversioninfo"
 )
 
 //go:embed resources/*
