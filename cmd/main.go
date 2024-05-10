@@ -167,6 +167,11 @@ func runBuild(ctx context.Context, args []string) error {
 		log.Fatalf("[FATAL] %v", err)
 	}
 
+	// done if we're skipping the build
+	if builder.SkipBuild {
+		return nil
+	}
+
 	// if requested, run setcap to allow binding to low ports
 	err = setcapIfRequested(output)
 	if err != nil {
@@ -174,7 +179,7 @@ func runBuild(ctx context.Context, args []string) error {
 	}
 
 	// prove the build is working by printing the version
-	if runtime.GOOS == os.Getenv("GOOS") && runtime.GOARCH == os.Getenv("GOARCH") {
+	if runtime.GOOS == utils.GetGOOS() && runtime.GOARCH == utils.GetGOARCH() {
 		if !filepath.IsAbs(output) {
 			output = "." + string(filepath.Separator) + output
 		}
@@ -195,7 +200,7 @@ func runBuild(ctx context.Context, args []string) error {
 func getCaddyOutputFile() string {
 	f := "." + string(filepath.Separator) + "caddy"
 	// compiling for Windows or compiling on windows without setting GOOS, use .exe extension
-	if os.Getenv("GOOS") == "windows" || (os.Getenv("GOOS") == "" && runtime.GOOS == "windows") {
+	if utils.GetGOOS() == "windows" {
 		f += ".exe"
 	}
 	return f
