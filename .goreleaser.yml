@@ -33,6 +33,7 @@ builds:
   - arm64
   - s390x
   - ppc64le
+  - riscv64
   goarm:
   - "5"
   - "6"
@@ -43,13 +44,19 @@ builds:
     - goos: darwin
       goarch: ppc64le
     - goos: darwin
+      goarch: riscv64
+    - goos: darwin
       goarch: s390x
     - goos: windows
       goarch: ppc64le
+    - goos: windows
+      goarch: riscv64
     - goos: windows
       goarch: s390x
     - goos: freebsd
       goarch: ppc64le
+    - goos: freebsd
+      goarch: riscv64
     - goos: freebsd
       goarch: s390x
     - goos: freebsd
