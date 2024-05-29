@@ -73,11 +73,14 @@ $ xcaddy build [<caddy_version>]
   - A commit like `a58f240d3ecbb59285303746406cab50217f8d24`
 
 - `--output` changes the output file.
-- `--with` can be used multiple times to add plugins by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional.
-- `--replace` can be used multiple times to replace dependencies to specific forks or local replacements. Useful in development environment to fix bugs in dependencies.
-- `--embed` can be used multiple times to embed directories into the built Caddy executable. The directory can be prefixed with a custom alias and a colon `:` to use it with the `root` directive and sub-directive. 
 
-Examples:
+- `--with` can be used multiple times to add plugins by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional.
+
+- `--replace` is like `--with`, but does not add a blank import to the code; it only writes a replace directive to `go.mod`, which is useful when devloping on Caddy's dependencies (ones that are not Caddy modules). Try this if you got an error when using `--with`, like `cannot find module providing package`.
+
+- `--embed` can be used multiple times to embed directories into the built Caddy executable. The directory can be prefixed with a custom alias and a colon `:` to use it with the `root` directive and sub-directive.
+
+#### Examples
 
 ```bash
 $ xcaddy build \
@@ -99,17 +102,21 @@ $ xcaddy build \
     --with github.com/caddyserver/ntlm-transport@v0.1.1=../../my-fork
 ```
 
-You can even replace Caddy core using the `--replace` flag:
+You can even replace Caddy core using the `--with` flag:
 
 ```
 $ xcaddy build \
-    --replace github.com/caddyserver/caddy/v2=../../my-caddy-fork
+    --with github.com/caddyserver/caddy/v2=../../my-caddy-fork
     
 $ xcaddy build \
-    --replace github.com/caddyserver/caddy/v2=github.com/my-user/caddy/v2@some-branch
+    --with github.com/caddyserver/caddy/v2=github.com/my-user/caddy/v2@some-branch
 ```
 
 This allows you to hack on Caddy core (and optionally plug in extra modules at the same time!) with relative ease.
+
+---
+
+You may embed directories into the Caddy executable:
 
 ```
 $ xcaddy build --embed foo:./sites/foo --embed bar:./sites/bar
@@ -129,6 +136,15 @@ bar.localhost {
 }
 ```
 This allows you to serve 2 sites from 2 different embedded directories, which are referenced by aliases, from a single Caddy executable.
+
+---
+
+If you need to work on Caddy's dependencies, you can use the `--replace` flag to replace it with a local copy of that dependency (or your fork on github etc if you need):
+
+```
+$ xcaddy build some-branch-on-caddy \
+    --replace golang.org/x/net=../net
+```
 
 ### For plugin development
 
