@@ -15,6 +15,7 @@
 package xcaddy
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -92,6 +93,25 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 		return err
 	}
 	defer buildEnv.Close()
+
+	// generating windows resources for embedding
+	if b.OS == "windows" {
+		// get version string, we need to parse the output to get the exact version instead tag, branch or commit
+		cmd := buildEnv.newGoBuildCommand(ctx, "list", "-m", buildEnv.caddyModulePath)
+		var buffer bytes.Buffer
+		cmd.Stdout = &buffer
+		err = buildEnv.runCommand(ctx, cmd)
+		if err != nil {
+			return err
+		}
+
+		// output looks like: github.com/caddyserver/caddy/v2 v2.7.6
+		version := strings.TrimSpace(strings.TrimPrefix(buffer.String(), buildEnv.caddyModulePath))
+		err = utils.WindowsResource(version, outputFile, buildEnv.tempFolder)
+		if err != nil {
+			return err
+		}
+	}
 
 	if b.SkipBuild {
 		log.Printf("[INFO] Skipping build as requested")
