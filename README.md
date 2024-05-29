@@ -62,6 +62,7 @@ Syntax:
 $ xcaddy build [<caddy_version>]
     [--output <file>]
     [--with <module[@version][=replacement]>...]
+    [--replace <module[@version]=replacement>...]
     [--embed <[alias]:path/to/dir>...]
 ```
 
@@ -73,6 +74,7 @@ $ xcaddy build [<caddy_version>]
 
 - `--output` changes the output file.
 - `--with` can be used multiple times to add plugins by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional.
+- `--replace` can be used multiple times to replace dependencies to specific forks or local replacements. Useful in development environment to fix bugs in dependencies.
 - `--embed` can be used multiple times to embed directories into the built Caddy executable. The directory can be prefixed with a custom alias and a colon `:` to use it with the `root` directive and sub-directive. 
 
 Examples:
@@ -97,14 +99,14 @@ $ xcaddy build \
     --with github.com/caddyserver/ntlm-transport@v0.1.1=../../my-fork
 ```
 
-You can even replace Caddy core using the `--with` flag:
+You can even replace Caddy core using the `--replace` flag:
 
 ```
 $ xcaddy build \
-    --with github.com/caddyserver/caddy/v2=../../my-caddy-fork
+    --replace github.com/caddyserver/caddy/v2=../../my-caddy-fork
     
 $ xcaddy build \
-    --with github.com/caddyserver/caddy/v2=github.com/my-user/caddy/v2@some-branch
+    --replace github.com/caddyserver/caddy/v2=github.com/my-user/caddy/v2@some-branch
 ```
 
 This allows you to hack on Caddy core (and optionally plug in extra modules at the same time!) with relative ease.
