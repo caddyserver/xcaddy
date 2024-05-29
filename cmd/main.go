@@ -74,9 +74,10 @@ func runBuild(ctx context.Context, args []string) error {
 	var embedDir []string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "--with":
+		case "--with", "--replace":
+			arg := args[i]
 			if i == len(args)-1 {
-				return fmt.Errorf("expected value after --with flag")
+				return fmt.Errorf("expected value after %s flag", arg)
 			}
 			i++
 			mod, ver, repl, err := splitWith(args[i])
@@ -84,10 +85,16 @@ func runBuild(ctx context.Context, args []string) error {
 				return err
 			}
 			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
-			plugins = append(plugins, xcaddy.Dependency{
-				PackagePath: mod,
-				Version:     ver,
-			})
+			if arg == "--with" {
+				plugins = append(plugins, xcaddy.Dependency{
+					PackagePath: mod,
+					Version:     ver,
+				})
+			}
+
+			if arg != "--with" && repl == "" {
+				return fmt.Errorf("expected value after --replace flag")
+			}
 			if repl != "" {
 				// adjust relative replacements in current working directory since our temporary module is in a different directory
 				if strings.HasPrefix(repl, ".") {
@@ -99,28 +106,6 @@ func runBuild(ctx context.Context, args []string) error {
 				}
 				replacements = append(replacements, xcaddy.NewReplace(xcaddy.Dependency{PackagePath: mod, Version: ver}.String(), repl))
 			}
-		case "--replace":
-			if i == len(args)-1 {
-				return fmt.Errorf("expected value after --replace flag")
-			}
-			i++
-			mod, ver, repl, err := splitWith(args[i])
-			if err != nil {
-				return err
-			}
-			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
-			if repl == "" {
-				return fmt.Errorf("expected value after --replace flag")
-			}
-			// adjust relative replacements in current working directory since our temporary module is in a different directory
-			if strings.HasPrefix(repl, ".") {
-				repl, err = filepath.Abs(repl)
-				if err != nil {
-					log.Fatalf("[FATAL] %v", err)
-				}
-				log.Printf("[INFO] Resolved relative replacement %s to %s", args[i], repl)
-			}
-			replacements = append(replacements, xcaddy.NewReplace(xcaddy.Dependency{PackagePath: mod, Version: ver}.String(), repl))
 		case "--output":
 			if i == len(args)-1 {
 				return fmt.Errorf("expected value after --output flag")
