@@ -179,6 +179,13 @@ type Dependency struct {
 	Version string `json:"version,omitempty"`
 }
 
+func (d Dependency) String() string {
+	if d.Version != "" {
+		return d.PackagePath + "@" + d.Version
+	}
+	return d.PackagePath
+}
+
 // ReplacementPath represents an old or new path component
 // within a Go module replacement directive.
 type ReplacementPath string
