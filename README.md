@@ -76,7 +76,7 @@ $ xcaddy build [<caddy_version>]
 
 - `--with` can be used multiple times to add plugins by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional.
 
-- `--replace` is like `--with`, but does not add a blank import to the code; it only writes a replace directive to `go.mod`, which is useful when devloping on Caddy's dependencies (ones that are not Caddy modules). Try this if you got an error when using `--with`, like `cannot find module providing package`.
+- `--replace` is like `--with`, but does not add a blank import to the code; it only writes a replace directive to `go.mod`, which is useful when developing on Caddy's dependencies (ones that are not Caddy modules). Try this if you got an error when using `--with`, like `cannot find module providing package`.
 
 - `--embed` can be used multiple times to embed directories into the built Caddy executable. The directory can be prefixed with a custom alias and a colon `:` to use it with the `root` directive and sub-directive.
 
