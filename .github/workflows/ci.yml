@@ -121,7 +121,7 @@ jobs:
           # Calculate the short SHA1 hash of the git commit
           echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - uses: goreleaser/goreleaser-action@v5
+      - uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
           args: check

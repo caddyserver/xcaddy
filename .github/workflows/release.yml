@@ -98,10 +98,10 @@ jobs:
 
     # GoReleaser will take care of publishing those artifacts into the release
     - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v5
+      uses: goreleaser/goreleaser-action@v6
       with:
         version: latest
-        args: release --rm-dist
+        args: release --clean
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         TAG: ${{ steps.vars.outputs.version_tag }}
