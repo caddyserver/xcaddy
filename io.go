@@ -12,6 +12,7 @@ import (
 
 // copy recursively copies src into dst with src's file modes.
 func copy(src, dst string) error {
+	src, _ = filepath.Abs(src)
 	src = filepath.ToSlash(src)
 	dst = filepath.ToSlash(dst)
 	log.Printf("[INFO] copying files: src=%s dest=%s", src, dst)
