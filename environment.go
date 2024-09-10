@@ -320,7 +320,7 @@ func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd) error {
 	}
 }
 
-// execGoGet runs "go get -d -v" with the given module/version as an argument.
+// execGoGet runs "go get -v" with the given module/version as an argument.
 // Also allows passing in a second module/version pair, meant to be the main
 // Caddy module/version we're building against; this will prevent the
 // plugin module from causing the Caddy version to upgrade, if the plugin
@@ -336,7 +336,7 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion,
 		caddy += "@" + caddyVersion
 	}
 
-	cmd := env.newGoBuildCommand(ctx, "get", "-d", "-v")
+	cmd := env.newGoBuildCommand(ctx, "get", "-v")
 	// using an empty string as an additional argument to "go get"
 	// breaks the command since it treats the empty string as a
 	// distinct argument, so we're using an if statement to avoid it.
