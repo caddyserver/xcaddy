@@ -74,7 +74,7 @@ Flags:
 			return fmt.Errorf("unable to parse --replace arguments: %s", err.Error())
 		}
 		for _, withArg := range withArgs {
-			mod, ver, _, err := splitWith(withArg)
+			mod, ver, repl, err := splitWith(withArg)
 			if err != nil {
 				return err
 			}
@@ -83,6 +83,7 @@ Flags:
 				PackagePath: mod,
 				Version:     ver,
 			})
+			handleReplace(withArg, mod, ver, repl, &replacements)
 		}
 
 		for _, withArg := range replaceArgs {
@@ -90,15 +91,7 @@ Flags:
 			if err != nil {
 				return err
 			}
-			// adjust relative replacements in current working directory since our temporary module is in a different directory
-			if strings.HasPrefix(repl, ".") {
-				repl, err = filepath.Abs(repl)
-				if err != nil {
-					log.Fatalf("[FATAL] %v", err)
-				}
-				log.Printf("[INFO] Resolved relative replacement %s to %s", withArg, repl)
-			}
-			replacements = append(replacements, xcaddy.NewReplace(xcaddy.Dependency{PackagePath: mod, Version: ver}.String(), repl))
+			handleReplace(withArg, mod, ver, repl, &replacements)
 		}
 
 		output, err = cmd.Flags().GetString("output")
@@ -186,4 +179,19 @@ Flags:
 
 		return nil
 	},
+}
+
+func handleReplace(orig, mod, ver, repl string, replacements *[]xcaddy.Replace) {
+	if repl != "" {
+		// adjust relative replacements in current working directory since our temporary module is in a different directory
+		if strings.HasPrefix(repl, ".") {
+			var err error
+			repl, err = filepath.Abs(repl)
+			if err != nil {
+				log.Fatalf("[FATAL] %v", err)
+			}
+			log.Printf("[INFO] Resolved relative replacement %s to %s", orig, repl)
+		}
+		*replacements = append(*replacements, xcaddy.NewReplace(xcaddy.Dependency{PackagePath: mod, Version: ver}.String(), repl))
+	}
 }
