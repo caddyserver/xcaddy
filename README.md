@@ -122,6 +122,9 @@ You may embed directories into the Caddy executable and serve them from the `emb
 $ xcaddy build --embed foo:./sites/foo --embed bar:./sites/bar
 $ cat Caddyfile
 {
+    # You must declare a custom filesystem using the `embedded` module.
+    # The first argument to `filesystem` is an arbitrary identifier
+    # that will also be passed to `fs` directives.
     filesystem my_embeds embedded
 }
 
