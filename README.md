@@ -116,22 +116,29 @@ This allows you to hack on Caddy core (and optionally plug in extra modules at t
 
 ---
 
-You may embed directories into the Caddy executable:
+You may embed directories into the Caddy executable and serve them from the `embedded` filesystem module:
 
 ```
 $ xcaddy build --embed foo:./sites/foo --embed bar:./sites/bar
 $ cat Caddyfile
+{
+    # You must declare a custom filesystem using the `embedded` module.
+    # The first argument to `filesystem` is an arbitrary identifier
+    # that will also be passed to `fs` directives.
+    filesystem my_embeds embedded
+}
+
 foo.localhost {
 	root * /foo
 	file_server {
-		fs embedded
+		fs my_embeds
 	}
 }
 
 bar.localhost {
 	root * /bar
 	file_server {
-		fs embedded
+		fs my_embeds
 	}
 }
 ```
