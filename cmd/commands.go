@@ -51,7 +51,7 @@ Flags:
 
  --replace is like --with, but does not add a blank import to the code; it only writes a replace directive to go.mod, which is useful when developing on Caddy's dependencies (ones that are not Caddy modules). Try this if you got an error when using --with, like cannot find module providing package.
 
- --embed can be used multiple times to embed directories into the built Caddy executable. The directory can be prefixed with a custom alias and a colon : to use it with the root directive and sub-directive. Example: xcaddy build --embed foo:./sites/foo --embed bar:./sites/bar (This allows you to serve 2 sites from 2 different embedded directories, which are referenced by aliases, from a single Caddy executable).
+ --embed can be used to embed the contents of a directory into the Caddy executable. --embed can be passed multiple times with separate source directories. The source directory can be prefixed with a custom alias and a colon : to write the embedded files into an aliased subdirectory, which is useful when combined with the root directive and sub-directive.
 `,
 	Short: "Compile custom caddy binaries",
 	Args:  cobra.MaximumNArgs(1),
