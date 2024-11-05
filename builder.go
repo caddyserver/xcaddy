@@ -152,7 +152,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 			cmd.Args = append(cmd.Args,
 				"-ldflags", "-w -s", // trim debug symbols
 				"-trimpath",
-				"-tags", "nobadger", "nomysql", "nopgx",
+				"-tags", "nobadger,nomysql,nopgx",
 			)
 		}
 	}
