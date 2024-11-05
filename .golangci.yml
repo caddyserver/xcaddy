@@ -44,3 +44,8 @@ issues:
     - text: "G306" # G306: Expect WriteFile permissions to be 0600 or less (gosec)
       linters:
         - gosec
+    # integer overflow conversion is not relevant for version numbers
+    - text: "G115"
+      linters:
+        - gosec
+
