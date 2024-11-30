@@ -107,6 +107,10 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 
 		// output looks like: github.com/caddyserver/caddy/v2 v2.7.6
 		version := strings.TrimSpace(strings.TrimPrefix(buffer.String(), buildEnv.caddyModulePath))
+		index := strings.Index(version, "=>")
+		if index != -1 {
+			version = strings.TrimSpace(version[:index])
+		}
 		err = utils.WindowsResource(version, outputFile, buildEnv.tempFolder)
 		if err != nil {
 			return err
