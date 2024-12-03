@@ -106,11 +106,13 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 		}
 
 		// output looks like: github.com/caddyserver/caddy/v2 v2.7.6
-		version := strings.TrimSpace(strings.TrimPrefix(buffer.String(), buildEnv.caddyModulePath))
-		index := strings.Index(version, "=>")
-		if index != -1 {
-			version = strings.TrimSpace(version[:index])
-		}
+		version := strings.TrimPrefix(buffer.String(), buildEnv.caddyModulePath)
+		// if caddy replacement is a local directory, version will be
+		// like v2.8.4 => c:\Users\test\caddy
+		// see https://github.com/caddyserver/xcaddy/issues/215
+		// strings.Cut return the string unchanged if separator is not found
+		version, _, _ = strings.Cut(version, "=>")
+		version = strings.TrimSpace(version)
 		err = utils.WindowsResource(version, outputFile, buildEnv.tempFolder)
 		if err != nil {
 			return err
