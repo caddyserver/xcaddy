@@ -247,8 +247,10 @@ func (env environment) newCommand(ctx context.Context, command string, args ...s
 // newGoBuildCommand creates a new *exec.Cmd which assumes the first element in `args` is one of: build, clean, get, install, list, run, or test. The
 // created command will also have the value of `XCADDY_GO_BUILD_FLAGS` appended to its arguments, if set.
 func (env environment) newGoBuildCommand(ctx context.Context, args ...string) *exec.Cmd {
-	cmd := env.newCommand(ctx, utils.GetGo(), args...)
-	return parseAndAppendFlags(cmd, env.buildFlags)
+	cmd := env.newCommand(ctx, utils.GetGo(), args[0])
+	cmd = parseAndAppendFlags(cmd, env.buildFlags)
+	cmd.Args = append(cmd.Args, args[1:]...)
+	return cmd
 }
 
 // newGoModCommand creates a new *exec.Cmd which assumes `args` are the args for `go mod` command. The
