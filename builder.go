@@ -97,7 +97,10 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	// generating windows resources for embedding
 	if b.OS == "windows" {
 		// get version string, we need to parse the output to get the exact version instead tag, branch or commit
-		cmd := buildEnv.newGoBuildCommand(ctx, "list", "-m", buildEnv.caddyModulePath)
+		cmd, err := buildEnv.newGoBuildCommand(ctx, "list", "-m", buildEnv.caddyModulePath)
+		if err != nil {
+			return err
+		}
 		var buffer bytes.Buffer
 		cmd.Stdout = &buffer
 		err = buildEnv.runCommand(ctx, cmd)
@@ -147,9 +150,12 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	}
 
 	// compile
-	cmd := buildEnv.newGoBuildCommand(ctx, "build",
+	cmd, err := buildEnv.newGoBuildCommand(ctx, "build",
 		"-o", absOutputFile,
 	)
+	if err != nil {
+		return err
+	}
 	if b.Debug {
 		// support dlv
 		cmd.Args = append(cmd.Args, "-gcflags", "all=-N -l")

@@ -246,11 +246,16 @@ func (env environment) newCommand(ctx context.Context, command string, args ...s
 
 // newGoBuildCommand creates a new *exec.Cmd which assumes the first element in `args` is one of: build, clean, get, install, list, run, or test. The
 // created command will also have the value of `XCADDY_GO_BUILD_FLAGS` appended to its arguments, if set.
-func (env environment) newGoBuildCommand(ctx context.Context, args ...string) *exec.Cmd {
-	cmd := env.newCommand(ctx, utils.GetGo(), args[0])
+func (env environment) newGoBuildCommand(ctx context.Context, goCommand string, args ...string) (*exec.Cmd, error) {
+	switch goCommand {
+	case "build", "clean", "get", "install", "list", "run", "test":
+	default:
+		return nil, fmt.Errorf("unsupported command of 'go': %s", goCommand)
+	}
+	cmd := env.newCommand(ctx, utils.GetGo(), goCommand)
 	cmd = parseAndAppendFlags(cmd, env.buildFlags)
-	cmd.Args = append(cmd.Args, args[1:]...)
-	return cmd
+	cmd.Args = append(cmd.Args, args...)
+	return cmd, nil
 }
 
 // newGoModCommand creates a new *exec.Cmd which assumes `args` are the args for `go mod` command. The
@@ -338,7 +343,10 @@ func (env environment) execGoGet(ctx context.Context, modulePath, moduleVersion,
 		caddy += "@" + caddyVersion
 	}
 
-	cmd := env.newGoBuildCommand(ctx, "get", "-v")
+	cmd, err := env.newGoBuildCommand(ctx, "get", "-v")
+	if err != nil {
+		return err
+	}
 	// using an empty string as an additional argument to "go get"
 	// breaks the command since it treats the empty string as a
 	// distinct argument, so we're using an if statement to avoid it.

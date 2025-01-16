@@ -27,40 +27,43 @@ func Test_environment_newGoBuildCommand(t *testing.T) {
 		buildFlags string
 	}
 	type args struct {
-		args []string
+		goCommand string
+		args      []string
 	}
 	tests := []struct {
 		name     string
 		fields   fields
 		args     args
 		wantArgs []string
+		wantErr  bool
 	}{
 		{
-			name:     "no flags + no args",
-			fields:   fields{},
-			args:     args{[]string{}},
-			wantArgs: []string{utils.GetGo()},
+			name:    "no flags + no args",
+			fields:  fields{},
+			args:    args{},
+			wantErr: true,
 		},
 
 		{
 			name:     "no flags + single arg",
 			fields:   fields{},
-			args:     args{[]string{"build"}},
+			args:     args{"build", []string{}},
 			wantArgs: []string{utils.GetGo(), "build"},
 		},
 
 		{
 			name:     "no flags + multi arg",
 			fields:   fields{},
-			args:     args{[]string{"build", "main.go"}},
+			args:     args{"build", []string{"main.go"}},
 			wantArgs: []string{utils.GetGo(), "build", "main.go"},
 		},
 
 		{
 			name:     "single flag + no arg",
 			fields:   fields{"-trimpath"},
-			args:     args{[]string{}},
+			args:     args{"", []string{}},
 			wantArgs: []string{utils.GetGo(), "-trimpath"},
+			wantErr:  true,
 		},
 
 		{
@@ -68,8 +71,8 @@ func Test_environment_newGoBuildCommand(t *testing.T) {
 			fields: fields{
 				"-ldflags '-w -s -extldflags=-static'",
 			},
-			args:     args{},
-			wantArgs: []string{utils.GetGo(), "-ldflags", "-w -s -extldflags=-static"},
+			args:    args{},
+			wantErr: true,
 		},
 
 		{
@@ -77,7 +80,7 @@ func Test_environment_newGoBuildCommand(t *testing.T) {
 			fields: fields{
 				"-ldflags '-w -s -extldflags=-static'",
 			},
-			args:     args{[]string{"build"}},
+			args:     args{"build", []string{}},
 			wantArgs: []string{utils.GetGo(), "build", "-ldflags", "-w -s -extldflags=-static"},
 		},
 
@@ -86,7 +89,7 @@ func Test_environment_newGoBuildCommand(t *testing.T) {
 			fields: fields{
 				buildFlags: "-ldflags '-w -s -extldflags=-static'",
 			},
-			args:     args{[]string{"build", "main.go"}},
+			args:     args{"build", []string{"main.go"}},
 			wantArgs: []string{utils.GetGo(), "build", "-ldflags", "-w -s -extldflags=-static", "main.go"},
 		},
 	}
@@ -95,8 +98,16 @@ func Test_environment_newGoBuildCommand(t *testing.T) {
 			env := environment{
 				buildFlags: tt.fields.buildFlags,
 			}
-			if got := env.newGoBuildCommand(context.TODO(), tt.args.args...); !reflect.DeepEqual(got.Args, tt.wantArgs) {
-				t.Errorf("(environment.newGoBuildCommand()).Args = %#v, want %#v", got.Args, tt.wantArgs)
+			got, err := env.newGoBuildCommand(context.TODO(), tt.args.goCommand, tt.args.args...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("environment.newGoBuildCommand() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if (err != nil) && tt.wantErr {
+				return // expected error, continue
+			}
+			if !reflect.DeepEqual(got.Args, tt.wantArgs) {
+				t.Errorf("environment.newGoBuildCommand() = %#v, want %#v", got.Args, tt.wantArgs)
 			}
 		})
 	}
