@@ -185,7 +185,7 @@ nextPlugin:
 		// a plugin package may be a subfolder of a module, i.e.
 		// foo/a/plugin is within module foo/a.
 		for repl := range replaced {
-			if strings.HasPrefix(p.PackagePath, repl) {
+			if strings.HasPrefix(p.PackagePath, repl+"/") {
 				continue nextPlugin
 			}
 		}
