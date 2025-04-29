@@ -180,10 +180,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	}
 nextPlugin:
 	for _, p := range b.Plugins {
-		// if module is locally available, do not "go get" it;
-		// also note that we iterate and check prefixes, because
-		// a plugin package may be a subfolder of a module, i.e.
-		// foo/a/plugin is within module foo/a.
+		// if module is locally available, still go get it 
 		for repl := range replaced {
 			if strings.HasPrefix(p.PackagePath, repl+"/") {
 				continue nextPlugin
