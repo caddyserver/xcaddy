@@ -180,12 +180,34 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	}
 nextPlugin:
 	for _, p := range b.Plugins {
-		// if module is locally available, do not "go get" it;
-		// also note that we iterate and check prefixes, because
+		// still fetch new modules and check is the latest or tagged version is viable
+		// regardless if this is in reference to a local module, lexical submodule or minor semantic revision.
+		//
+		// see issue caddyserver/xcaddy/issues/221 for more info about line
+		// with or without `if strings.HasPrefix(p.PackagePath, repl+"/") ... `
+		//
+		// In the case of lexical submodules:
+		// say you are requiring both submodules libdns<version> *and* libdns-provider<your new dns provider>
+		// your new local dns provder module prefixed with `libdns-` will be skipped when running
+		// xcaddy `build --with libdns-provider<your new dns provider> ...`
+		//
+		// In the case of semantic and/or local submodules:
+		// say you are requiring both submodules <template> and <template>-caddy,
+		// where you are working on your template module.
+		// xcaddy build --with FQDN/<template>-caddy@<Real Tag> --with FQDN/<template=.
+		//
+		// You should expect xcaddy to be able fetch newer submodule versions, i.e.
+		//   FQDN/<template>-caddy@<Real Tag+1>
+		// or properly fail if you specify a false minor semantic revision submodule,
+		//   FQDN/<template>-caddy@<False Tag+9>
+		// while working from its parent module directory as a local override.
+		//
+		// This is all to say, while we iterate and check prefixes,
 		// a plugin package may be a subfolder of a module, i.e.
-		// foo/a/plugin is within module foo/a.
+		// foo/a/plugin is within module foo/a
+		// *or* a lexical submodule, and in either case tagged versions should be checked.
 		for repl := range replaced {
-			if strings.HasPrefix(p.PackagePath, repl) {
+			if strings.HasPrefix(p.PackagePath, repl+"/") {
 				continue nextPlugin
 			}
 		}
