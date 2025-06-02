@@ -1,53 +1,53 @@
-linters-settings:
-  errcheck:
-    exclude-functions:
-    - fmt.*
-    - Read.*
-  misspell:
-    locale: US
-
+version: "2"
+run:
+  issues-exit-code: 1
+  tests: false
+output:
+  formats:
+    text:
+      path: stdout
+      print-linter-name: true
+      print-issued-lines: true
 linters:
   enable:
     - bodyclose
+    - gosec
+    - misspell
     - prealloc
     - unconvert
-    - errcheck
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.*
+        - Read.*
+    misspell:
+      locale: US
+    staticcheck:
+      checks: ["all", "-ST1000", "-ST1003", "-ST1016", "-ST1020", "-ST1021", "-ST1022",  "-QF1006", "-QF1008"] # default, and exclude 1 more undesired check
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - gosec
+        text: G107
+      - linters:
+          - gosec
+        text: G204
+      - linters:
+          - gosec
+        text: G306
+      - linters:
+          - gosec
+        text: G115
+formatters:
+  enable:
     - gofmt
     - goimports
-    - gosec
-    - ineffassign
-    - misspell
-
-run:
-  # default concurrency is a available CPU number.
-  # concurrency: 4 # explicitly omit this value to fully utilize available resources.
-  timeout: 5m
-  issues-exit-code: 1
-  tests: false
-
-# output configuration options
-output:
-  formats:
-  - format: 'colored-line-number'
-  print-issued-lines: true
-  print-linter-name: true
-
-issues:
-  exclude-rules:
-    # we aren't calling unknown URL
-    - text: "G107" # G107: Url provided to HTTP request as taint input
-      linters:
-        - gosec
-    # we're shelling out to known commands, not relying on user-defined input.
-    - text: "G204" # G204: Audit use of command execution
-      linters:
-        - gosec
-    # we're writing out the main.go to a temp dir, not sensitive
-    - text: "G306" # G306: Expect WriteFile permissions to be 0600 or less (gosec)
-      linters:
-        - gosec
-    # integer overflow conversion is not relevant for version numbers
-    - text: "G115"
-      linters:
-        - gosec
+  exclusions:
+    generated: lax
 
