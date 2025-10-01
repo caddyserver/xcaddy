@@ -44,7 +44,7 @@ jobs:
         go-version: ${{ matrix.go }}
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Print Go version and environment
       id: vars
@@ -107,7 +107,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Print Go version and environment
         id: vars
