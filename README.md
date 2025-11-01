@@ -21,7 +21,16 @@ You may also build `xcaddy` from source:
 go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 ```
 
-For Debian, Ubuntu, and Raspbian, an `xcaddy` package is available from our [Cloudsmith repo](https://cloudsmith.io/~caddy/repos/xcaddy/packages/):
+For Debian, Ubuntu, and Raspbian, an `xcaddy` package is available from our [Cloudsmith repo](https://cloudsmith.io/~caddy/repos/xcaddy/packages/). Debian 11+ (10 w/backports) can use [extrepo](https://wiki.debian.org/DebianRepository/Unofficial#Extrepo) to add the repository:
+
+```bash
+sudo apt install -y extrepo
+sudo extrepo enable xcaddy
+sudo apt update
+sudo apt install xcaddy
+```
+
+Otherwise it can still be manually added using traditional methods:
 
 ```bash
 sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
