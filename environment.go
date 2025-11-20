@@ -74,6 +74,9 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 		return nil, err
 	}
 	defer func() {
+		if b.SkipCleanup {
+			return
+		}
 		if err != nil {
 			err2 := os.RemoveAll(tempFolder)
 			if err2 != nil {
