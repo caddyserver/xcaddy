@@ -13,13 +13,43 @@ Stay updated, be aware of changes, and please submit feedback! Thanks!
 
 ## Install
 
-You can [download binaries](https://github.com/caddyserver/xcaddy/releases) that are already compiled for your platform from the Release tab. 
+`xcaddy` is available via
+
+- GitHub Releases
+- Webi
+- Go
+- .deb
+
+### GitHub Releases
+
+You can [download binaries](https://github.com/caddyserver/xcaddy/releases) that are already compiled for your platform from the Release tab.
+
+### Mac, Linux, & Windows
+
+[Webi](https://webinstall.dev/xcaddy) selects the correct download URL for you
+to get the official `xcaddy` directly from GitHub releases, and will also move
+it into `~/.local/bin/xcaddy`, which may be added to your `PATH`. It will also
+install Go if needed.
+
+```sh
+# Mac, Linux
+curl -sS https://webi.sh/xcaddy@0.3 | sh
+```
+
+```pwsh
+# Windows
+curl.exe https://webi.ms/xcaddy@0.3 | powershell
+```
+
+### Go
 
 You may also build `xcaddy` from source:
 
 ```bash
 go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 ```
+
+### Debian-based Linux
 
 For Debian, Ubuntu, and Raspbian, an `xcaddy` package is available from our [Cloudsmith repo](https://cloudsmith.io/~caddy/repos/xcaddy/packages/):
 
