@@ -109,6 +109,7 @@ Flags:
 			return fmt.Errorf("unable to parse --embed arguments: %s", err.Error())
 		}
 		
+		// Experimental: If no --pgo flag is specified and a default.pgo file is found, use that for PGO
 		pgo, err = cmd.Flags().GetString("pgo")
 		if err != nil {
 			return fmt.Errorf("unable to parse --pgo arguments: %s", err.Error())

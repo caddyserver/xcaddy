@@ -47,7 +47,7 @@ type Builder struct {
 	Debug        bool          `json:"debug,omitempty"`
 	BuildFlags   string        `json:"build_flags,omitempty"`
 	ModFlags     string        `json:"mod_flags,omitempty"`
-	PgoProfile	 string	       `json:"pgo_profile,omitempty"`
+	PgoProfile	 string	       `json:"pgo_profile,omitempty"` // Experimental
 
 	// Experimental: subject to change
 	EmbedDirs []struct {
