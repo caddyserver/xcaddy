@@ -64,6 +64,7 @@ $ xcaddy build [<caddy_version>]
     [--with <module[@version][=replacement]>...]
     [--replace <module[@version]=replacement>...]
     [--embed <[alias]:path/to/dir>...]
+    [--pgo <file>] # EXPERIMENTAL
 ```
 
 - `<caddy_version>` is the core Caddy version to build; defaults to `CADDY_VERSION` env variable or latest.<br>
@@ -79,6 +80,8 @@ $ xcaddy build [<caddy_version>]
 - `--replace` is like `--with`, but does not add a blank import to the code; it only writes a replace directive to `go.mod`, which is useful when developing on Caddy's dependencies (ones that are not Caddy modules). Try this if you got an error when using `--with`, like `cannot find module providing package`.
 
 - `--embed` can be used to embed the contents of a directory into the Caddy executable. `--embed` can be passed multiple times with separate source directories. The source directory can be prefixed with a custom alias and a colon `:` to write the embedded files into an aliased subdirectory, which is useful when combined with the `root` directive and sub-directive.
+
+- `--pgo` can be used to specify a file containing a profile to use for profile guided optimization. If a file named `default.pgo` is present in the current directory, it will automatically be used. This feature is new to xcaddy and is considered experimental.
 
 #### Examples
 
