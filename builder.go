@@ -47,6 +47,7 @@ type Builder struct {
 	Debug        bool          `json:"debug,omitempty"`
 	BuildFlags   string        `json:"build_flags,omitempty"`
 	ModFlags     string        `json:"mod_flags,omitempty"`
+	PgoProfile	 string	       `json:"pgo_profile,omitempty"` // Experimental
 
 	// Experimental: subject to change
 	EmbedDirs []struct {
@@ -76,6 +77,12 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	}
 	log.Printf("[INFO] absolute output file path: %s", absOutputFile)
 
+	// likewise with the PGO profile
+	absPgoProfile, err := filepath.Abs(b.PgoProfile)
+	if err != nil {
+		return err
+	}
+	
 	// set some defaults from the environment, if applicable
 	if b.OS == "" {
 		b.OS = utils.GetGOOS()
@@ -153,6 +160,10 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	cmd, err := buildEnv.newGoBuildCommand(ctx, "build",
 		"-o", absOutputFile,
 	)
+	if b.PgoProfile != "" {
+		log.Printf("[INFO] using PGO profile %s", b.PgoProfile)
+		cmd.Args = append(cmd.Args, "-pgo=" + absPgoProfile)
+	}
 	if err != nil {
 		return err
 	}
