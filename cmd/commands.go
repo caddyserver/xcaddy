@@ -19,6 +19,7 @@ func init() {
 	buildCommand.Flags().String("output", "", "change the output file name")
 	buildCommand.Flags().StringArray("replace", []string{}, "like --with but for Go modules")
 	buildCommand.Flags().StringArray("embed", []string{}, "embeds directories into the built Caddy executable to use with the `embedded` file-system")
+	buildCommand.Flags().String("pgo", "", "file containing profile for PGO (experimental)")
 }
 
 var versionCommand = &cobra.Command{
@@ -35,7 +36,8 @@ var buildCommand = &cobra.Command{
     [--output <file>]
     [--with <module[@version][=replacement]>...]
     [--replace <module[@version]=replacement>...]
-    [--embed <[alias]:path/to/dir>...]`,
+    [--embed <[alias]:path/to/dir>...]
+    [--pgo <file>] # EXPERIMENTAL`,
 	Long: `
 <caddy_version> is the core Caddy version to build; defaults to CADDY_VERSION env variable or latest.
 This can be the keyword latest, which will use the latest stable tag, or any git ref such as:
@@ -52,6 +54,8 @@ Flags:
  --replace is like --with, but does not add a blank import to the code; it only writes a replace directive to go.mod, which is useful when developing on Caddy's dependencies (ones that are not Caddy modules). Try this if you got an error when using --with, like cannot find module providing package.
 
  --embed can be used to embed the contents of a directory into the Caddy executable. --embed can be passed multiple times with separate source directories. The source directory can be prefixed with a custom alias and a colon : to write the embedded files into an aliased subdirectory, which is useful when combined with the root directive and sub-directive.
+ 
+ --pgo is used to specify a specify a file containing a profile for profile-guided optimization (experimental)
 `,
 	Short: "Compile custom caddy binaries",
 	Args:  cobra.MaximumNArgs(1),
@@ -60,6 +64,7 @@ Flags:
 		var plugins []xcaddy.Dependency
 		var replacements []xcaddy.Replace
 		var embedDir []string
+		var pgo string
 		var argCaddyVersion string
 		if len(args) > 0 {
 			argCaddyVersion = args[0]
@@ -103,6 +108,19 @@ Flags:
 		if err != nil {
 			return fmt.Errorf("unable to parse --embed arguments: %s", err.Error())
 		}
+
+		// Experimental: If no --pgo flag is specified and a default.pgo file is found, use that for PGO
+		pgo, err = cmd.Flags().GetString("pgo")
+		if err != nil {
+			return fmt.Errorf("unable to parse --pgo arguments: %s", err.Error())
+		}
+		if pgo == "" {
+			_, err = os.Stat("default.pgo")
+			if err == nil {
+				pgo = "default.pgo"
+			}
+		}
+
 		// prefer caddy version from command line argument over env var
 		if argCaddyVersion != "" {
 			caddyVersion = argCaddyVersion
@@ -127,6 +145,7 @@ Flags:
 			Debug:        buildDebugOutput,
 			BuildFlags:   buildFlags,
 			ModFlags:     modFlags,
+			PgoProfile:   pgo,
 		}
 		for _, md := range embedDir {
 			if before, after, found := strings.Cut(md, ":"); found {
