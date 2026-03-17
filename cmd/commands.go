@@ -108,7 +108,7 @@ Flags:
 		if err != nil {
 			return fmt.Errorf("unable to parse --embed arguments: %s", err.Error())
 		}
-		
+
 		// Experimental: If no --pgo flag is specified and a default.pgo file is found, use that for PGO
 		pgo, err = cmd.Flags().GetString("pgo")
 		if err != nil {
@@ -120,7 +120,7 @@ Flags:
 				pgo = "default.pgo"
 			}
 		}
-		
+
 		// prefer caddy version from command line argument over env var
 		if argCaddyVersion != "" {
 			caddyVersion = argCaddyVersion
