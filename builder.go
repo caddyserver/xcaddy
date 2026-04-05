@@ -156,6 +156,15 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 		return err
 	}
 
+	// initialize a git repo in the temp folder so that Go embeds VCS
+	// information (vcs.revision, vcs.time, vcs.modified) in the binary.
+	// Without this, dependencies that read debug.ReadBuildInfo() to
+	// determine their version (e.g. Tailscale) get no VCS data and
+	// fall back to error strings like "-ERR-BuildInfo".
+	if err := buildEnv.initGitRepo(ctx); err != nil {
+		log.Printf("[WARNING] Failed to initialize git repo for VCS info: %v", err)
+	}
+
 	// compile
 	cmd, err := buildEnv.newGoBuildCommand(ctx, "build",
 		"-o", absOutputFile,
