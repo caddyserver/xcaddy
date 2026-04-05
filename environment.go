@@ -261,6 +261,30 @@ func (env environment) Close() error {
 	return os.RemoveAll(env.tempFolder)
 }
 
+// initGitRepo initializes a git repository in the temporary build folder
+// and creates an initial commit. This causes the Go toolchain to embed
+// VCS build information (vcs.revision, vcs.time, vcs.modified) into the
+// resulting binary via debug.ReadBuildInfo().
+func (env environment) initGitRepo(ctx context.Context) error {
+	gitInit := env.newCommand(ctx, "git", "init")
+	if err := env.runCommand(ctx, gitInit); err != nil {
+		return fmt.Errorf("git init: %v", err)
+	}
+
+	gitAdd := env.newCommand(ctx, "git", "add", "-A")
+	if err := env.runCommand(ctx, gitAdd); err != nil {
+		return fmt.Errorf("git add: %v", err)
+	}
+
+	gitCommit := env.newCommand(ctx, "git", "-c", "user.name=xcaddy", "-c", "user.email=xcaddy@localhost",
+		"commit", "-m", "xcaddy build")
+	if err := env.runCommand(ctx, gitCommit); err != nil {
+		return fmt.Errorf("git commit: %v", err)
+	}
+
+	return nil
+}
+
 func (env environment) newCommand(ctx context.Context, command string, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Dir = env.tempFolder
