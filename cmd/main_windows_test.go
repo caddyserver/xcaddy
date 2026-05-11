@@ -89,7 +89,7 @@ func TestParseGoListJson(t *testing.T) {
 }
 `))
 	if err != nil {
-		t.Errorf("Error occured during JSON parsing")
+		t.Errorf("Error occurred during JSON parsing")
 	}
 	if currentModule != "github.com/simnalamburt/module" {
 		t.Errorf("Unexpected module name")
