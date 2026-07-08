@@ -135,6 +135,7 @@ func (b Builder) newEnvironment(ctx context.Context, out *buildOutput) (*environ
 		skipCleanup:     b.SkipCleanup,
 		buildFlags:      b.BuildFlags,
 		modFlags:        b.ModFlags,
+		env:             b.Env,
 		out:             out,
 		logger:          logger,
 	}
@@ -261,6 +262,7 @@ type environment struct {
 	skipCleanup     bool
 	buildFlags      string
 	modFlags        string
+	env             []string // nil = inherit the process environment
 	out             *buildOutput
 	logger          *log.Logger
 }
@@ -282,6 +284,9 @@ func (env environment) Close() error {
 func (env environment) newCommand(ctx context.Context, command string, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Dir = env.tempFolder
+	if env.env != nil {
+		cmd.Env = env.env
+	}
 	cmd.Stdout = env.out.stdout()
 	cmd.Stderr = env.out.stderr()
 	return cmd

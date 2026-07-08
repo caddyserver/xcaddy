@@ -87,6 +87,38 @@ type Builder struct {
 	// not skip removal of the temporary build folder. The
 	// callback must not call back into the Builder.
 	OnStep func(event *StepEvent) error `json:"-"`
+
+	// Env, if non-nil, is used as the entire environment of the
+	// underlying go commands, in KEY=value form (see os.Environ);
+	// the process's own environment is not inherited. This
+	// enables hermetic, credential-free builds: if build logs are
+	// published (see OnStep), no ambient credential (GOPROXY
+	// userinfo, git configuration, .netrc, cloud keys, ...) can
+	// leak into them when the build never had access to any. The
+	// environment must include everything the go toolchain needs,
+	// at minimum PATH and HOME (or GOCACHE and GOMODCACHE); GOOS,
+	// GOARCH, GOARM and CGO_ENABLED are set by the Builder
+	// itself. If nil, the process environment is inherited, which
+	// is the historical behavior.
+	Env []string `json:"-"`
+
+	// Secrets lists sensitive values (tokens, passwords, keys)
+	// that must not appear in step output: every occurrence is
+	// replaced with "[REDACTED]" before it reaches a StepEvent's
+	// Output. Matching is exact and line-buffered, so a secret
+	// cannot slip through by straddling a write boundary; values
+	// containing newlines cannot be matched. Secrets has no
+	// effect when OnStep is nil.
+	Secrets []string `json:"-"`
+
+	// RedactCredentials additionally masks common credential
+	// shapes in step output: userinfo in URLs, well-known token
+	// formats (GitHub, GitLab, Slack, AWS access key IDs), and
+	// PEM-encoded private key blocks. It is a best-effort
+	// backstop for publishable logs, not a guarantee; prefer
+	// building in a credential-free environment (see Env). It has
+	// no effect when OnStep is nil.
+	RedactCredentials bool `json:"-"`
 }
 
 // StepEvent describes a build step that is about to begin. It is
@@ -136,13 +168,32 @@ type buildOutput struct {
 	onStep func(*StepEvent) error
 	logger *log.Logger
 
+	// redaction configuration applied to each step's output
+	rules         []redactRule
+	maskKeyBlocks bool
+
 	mu   sync.Mutex
-	pipe *bufferedPipe // buffer for the current step; nil = defaults
+	sink io.WriteCloser // write side for the current step; nil = defaults
 
 	// the currently-running step callback; accessed only from the
 	// build's own goroutine (in beginStep/endStep), never concurrently
 	handlerStep Step
 	handlerDone chan error
+}
+
+// configureRedaction compiles the Builder's redaction settings
+// into rules applied to every step's output.
+func (o *buildOutput) configureRedaction(secrets []string, redactCredentials bool) {
+	for _, s := range secrets {
+		if s == "" {
+			continue
+		}
+		o.rules = append(o.rules, redactRule{literal: []byte(s)})
+	}
+	if redactCredentials {
+		o.rules = append(o.rules, builtinCredentialRules...)
+		o.maskKeyBlocks = true
+	}
 }
 
 func newBuildOutput(onStep func(*StepEvent) error) *buildOutput {
@@ -170,13 +221,17 @@ func (o *buildOutput) beginStep(step Step) error {
 		return err
 	}
 	pipe := newBufferedPipe()
+	var sink io.WriteCloser = pipe
+	if len(o.rules) > 0 || o.maskKeyBlocks {
+		sink = &redactor{dst: pipe, rules: o.rules, maskKeyBlocks: o.maskKeyBlocks}
+	}
 	event := &StepEvent{Step: step, Output: pipe}
 	done := make(chan error, 1)
 	go func() {
 		done <- o.onStep(event)
 	}()
 	o.mu.Lock()
-	o.pipe = pipe
+	o.sink = sink
 	o.mu.Unlock()
 	o.handlerStep = step
 	o.handlerDone = done
@@ -194,13 +249,13 @@ func (o *buildOutput) beginStep(step Step) error {
 // error from the callback aborts the build.
 func (o *buildOutput) endStep() error {
 	o.mu.Lock()
-	pipe := o.pipe
-	o.pipe = nil
+	sink := o.sink
+	o.sink = nil
 	o.mu.Unlock()
-	if pipe == nil {
+	if sink == nil {
 		return nil
 	}
-	pipe.Close()
+	sink.Close()
 	err := <-o.handlerDone
 	o.handlerDone = nil
 	if err != nil {
@@ -220,16 +275,17 @@ type outputFacet struct {
 	fallback io.Writer
 }
 
-// Write routes p to the current step's buffered pipe, falling
-// back to the facet's default stream if no step is active.
+// Write routes p to the current step's sink (the buffered pipe,
+// possibly behind a redactor), falling back to the facet's default
+// stream if no step is active.
 func (f outputFacet) Write(p []byte) (int, error) {
 	f.out.mu.Lock()
-	pipe := f.out.pipe
+	sink := f.out.sink
 	f.out.mu.Unlock()
-	if pipe == nil {
+	if sink == nil {
 		return f.fallback.Write(p)
 	}
-	return pipe.Write(p)
+	return sink.Write(p)
 }
 
 // bufferedPipe is an in-memory pipe with a write side that never
@@ -292,6 +348,7 @@ func (p *bufferedPipe) Close() error {
 // configured plugins and plops down a binary at outputFile.
 func (b Builder) Build(ctx context.Context, outputFile string) (err error) {
 	out := newBuildOutput(b.OnStep)
+	out.configureRedaction(b.Secrets, b.RedactCredentials)
 	// registered before buildEnv.Close (deferred below), so it runs
 	// after it: it ends the final step -- normally cleanup --
 	// delivering its EOF and waiting for its callback to return, so
@@ -386,10 +443,16 @@ func (b Builder) Build(ctx context.Context, outputFile string) (err error) {
 		return nil
 	}
 
-	// prepare the environment for the go command; for
-	// the most part we want it to inherit our current
-	// environment, with a few customizations
-	env := os.Environ()
+	// prepare the environment for the go command: either the
+	// caller's hermetic environment, or (for the most part) an
+	// inheritance of our current environment, with a few
+	// customizations
+	env := b.Env
+	if env == nil {
+		env = os.Environ()
+	} else {
+		env = append([]string(nil), env...) // don't mutate the caller's slice
+	}
 	env = setEnv(env, "GOOS="+b.OS)
 	env = setEnv(env, "GOARCH="+b.Arch)
 	env = setEnv(env, "GOARM="+b.ARM)

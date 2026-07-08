@@ -22,8 +22,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -465,5 +467,158 @@ func TestBuildOutputCallbacksNeverOverlap(t *testing.T) {
 	// endStep must have joined the final callback
 	if got := finished.Load(); got != int32(len(steps)) {
 		t.Errorf("after endStep: %d callbacks finished, want %d", got, len(steps))
+	}
+}
+
+func TestBuildOutputRedaction(t *testing.T) {
+	outputs := make(map[Step]string)
+	out := newBuildOutput(func(e *StepEvent) error {
+		data, err := io.ReadAll(e.Output)
+		if err != nil {
+			return err
+		}
+		outputs[e.Step] = string(data)
+		return nil
+	})
+	out.configureRedaction([]string{"hunter2secret"}, true)
+
+	if err := out.beginStep(StepPinVersions); err != nil {
+		t.Fatalf("beginStep() error = %v", err)
+	}
+	// an exact secret straddling two writes must still be caught
+	fmt.Fprint(out.stderr(), "token=hunter2se")
+	fmt.Fprint(out.stderr(), "cret done\n")
+	// built-in credential shapes
+	fmt.Fprint(out.stderr(), "fetch https://alice:s3cr3t@proxy.example.com/mod\n")
+	fmt.Fprint(out.stderr(), "oauth ghp_0123456789abcdefghijklmnop rejected\n")
+	fmt.Fprint(out.stderr(), "key AKIAIOSFODNN7EXAMPLE in env\n")
+	fmt.Fprint(out.stderr(), "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA\n-----END RSA PRIVATE KEY-----\n")
+	// unterminated final line must be flushed (masked) at step end
+	fmt.Fprint(out.stderr(), "trailing hunter2secret partial")
+	if err := out.endStep(); err != nil {
+		t.Fatalf("endStep() error = %v", err)
+	}
+
+	got := outputs[StepPinVersions]
+	for _, leaked := range []string{
+		"hunter2secret", "s3cr3t", "alice",
+		"ghp_0123456789abcdefghijklmnop",
+		"AKIAIOSFODNN7EXAMPLE",
+		"MIIEowIBAAKCAQEA", "BEGIN RSA PRIVATE KEY",
+	} {
+		if strings.Contains(got, leaked) {
+			t.Errorf("output leaks %q:\n%s", leaked, got)
+		}
+	}
+	for _, want := range []string{
+		"token=[REDACTED] done",
+		"fetch https://[REDACTED]@proxy.example.com/mod",
+		"oauth [REDACTED] rejected",
+		"key [REDACTED] in env",
+		"trailing [REDACTED] partial",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("output missing %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestEnvironmentHermeticEnv(t *testing.T) {
+	// when Env is set, commands receive exactly that environment
+	hermetic := []string{"PATH=/usr/bin", "HOME=/tmp/home"}
+	env := environment{env: hermetic, out: newBuildOutput(nil)}
+	cmd := env.newCommand(context.Background(), "go", "version")
+	if !reflect.DeepEqual(cmd.Env, hermetic) {
+		t.Errorf("cmd.Env = %v, want %v", cmd.Env, hermetic)
+	}
+
+	// when Env is nil, commands inherit the process environment
+	// (exec's behavior for a nil cmd.Env)
+	env = environment{out: newBuildOutput(nil)}
+	cmd = env.newCommand(context.Background(), "go", "version")
+	if cmd.Env != nil {
+		t.Errorf("cmd.Env = %v, want nil (inherit)", cmd.Env)
+	}
+}
+
+// TestBuildHermeticEnv runs a real partial build with a minimal,
+// credential-free environment and verifies the go toolchain still
+// works within it. It aborts after initialize_module, so only local
+// go commands execute and no network access occurs.
+func TestBuildHermeticEnv(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("a minimal hermetic environment needs platform-specific variables on Windows")
+	}
+	sentinel := errors.New("far enough")
+	outputs := make(map[Step]string)
+
+	b := Builder{
+		Compile:   Compile{Platform: Platform{OS: "linux", Arch: "amd64"}},
+		SkipBuild: true,
+		Env: []string{
+			"PATH=" + os.Getenv("PATH"),
+			"HOME=" + t.TempDir(), // fresh HOME: no .netrc, no .gitconfig, no caches
+		},
+		OnStep: func(e *StepEvent) error {
+			data, err := io.ReadAll(e.Output)
+			if err != nil {
+				return err
+			}
+			outputs[e.Step] = string(data)
+			if e.Step == StepInitializeModule {
+				return sentinel
+			}
+			return nil
+		},
+	}
+
+	err := b.Build(context.Background(), filepath.Join(t.TempDir(), "caddy"))
+	// reaching the sentinel proves `go mod init` succeeded inside
+	// the hermetic environment
+	if !errors.Is(err, sentinel) {
+		t.Fatalf("Build() error = %v, want errors.Is(err, sentinel)", err)
+	}
+	if got := outputs[StepInitializeModule]; !strings.Contains(got, "Initializing Go module") {
+		t.Errorf("initialize_module output missing init line:\n%s", got)
+	}
+}
+
+// TestBuildRedactsSecrets verifies end to end that a configured
+// secret never reaches step output, even when it appears in values
+// xcaddy logs itself (here: the output file path).
+func TestBuildRedactsSecrets(t *testing.T) {
+	sentinel := errors.New("far enough")
+	secret := "hunter2secret"
+	var all strings.Builder
+
+	b := Builder{
+		Compile:   Compile{Platform: Platform{OS: "linux", Arch: "amd64"}},
+		SkipBuild: true,
+		Secrets:   []string{secret},
+		OnStep: func(e *StepEvent) error {
+			data, err := io.ReadAll(e.Output)
+			if err != nil {
+				return err
+			}
+			all.Write(data)
+			if e.Step == StepInitializeModule {
+				return sentinel
+			}
+			return nil
+		},
+	}
+
+	outputFile := filepath.Join(t.TempDir(), secret, "caddy")
+	err := b.Build(context.Background(), outputFile)
+	if !errors.Is(err, sentinel) {
+		t.Fatalf("Build() error = %v, want errors.Is(err, sentinel)", err)
+	}
+
+	got := all.String()
+	if strings.Contains(got, secret) {
+		t.Errorf("step output leaks the secret:\n%s", got)
+	}
+	if !strings.Contains(got, redactedPlaceholder) {
+		t.Errorf("step output contains no redaction placeholder; secret was never encountered?\n%s", got)
 	}
 }
