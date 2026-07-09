@@ -17,6 +17,7 @@ package xcaddy
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -30,7 +31,9 @@ import (
 	"github.com/google/shlex"
 )
 
-func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
+func (b Builder) newEnvironment(ctx context.Context, out *buildOutput) (*environment, error) {
+	logger := out.logger
+
 	// assume Caddy v2 if no semantic version is provided
 	caddyModulePath := defaultCaddyModulePath
 	if !strings.HasPrefix(b.CaddyVersion, "v") || !strings.Contains(b.CaddyVersion, ".") {
@@ -84,11 +87,11 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 			}
 		}
 	}()
-	log.Printf("[INFO] Temporary folder: %s", tempFolder)
+	logger.Printf("[INFO] Temporary folder: %s", tempFolder)
 
 	// write the main module file to temporary folder
 	mainPath := filepath.Join(tempFolder, "main.go")
-	log.Printf("[INFO] Writing main module: %s\n%s", mainPath, buf.Bytes())
+	logger.Printf("[INFO] Writing main module: %s\n%s", mainPath, buf.Bytes())
 	err = os.WriteFile(mainPath, buf.Bytes(), 0o644)
 	if err != nil {
 		return nil, err
@@ -96,7 +99,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	if len(b.EmbedDirs) > 0 {
 		for _, d := range b.EmbedDirs {
-			err = copy(d.Dir, filepath.Join(tempFolder, "files", d.Name))
+			err = copyDir(logger, d.Dir, filepath.Join(tempFolder, "files", d.Name))
 			if err != nil {
 				return nil, err
 			}
@@ -104,7 +107,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 			if err != nil {
 				return nil, fmt.Errorf("embed directory does not exist: %s", d.Dir)
 			}
-			log.Printf("[INFO] Embedding directory: %s", d.Dir)
+			logger.Printf("[INFO] Embedding directory: %s", d.Dir)
 			buf.Reset()
 			tpl, err = template.New("embed").Parse(embeddedModuleTemplate)
 			if err != nil {
@@ -114,7 +117,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 			if err != nil {
 				return nil, err
 			}
-			log.Printf("[INFO] Writing 'embedded' module: %s\n%s", mainPath, buf.Bytes())
+			logger.Printf("[INFO] Writing 'embedded' module: %s\n%s", mainPath, buf.Bytes())
 			emedPath := filepath.Join(tempFolder, "embed.go")
 			err = os.WriteFile(emedPath, buf.Bytes(), 0o644)
 			if err != nil {
@@ -132,10 +135,17 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 		skipCleanup:     b.SkipCleanup,
 		buildFlags:      b.BuildFlags,
 		modFlags:        b.ModFlags,
+		env:             b.Env,
+		out:             out,
+		logger:          logger,
 	}
 
 	// initialize the go module
-	log.Println("[INFO] Initializing Go module")
+	err = out.beginStep(StepInitializeModule)
+	if err != nil {
+		return nil, err
+	}
+	logger.Println("[INFO] Initializing Go module")
 	cmd := env.newGoModCommand(ctx, "init")
 	cmd.Args = append(cmd.Args, "caddy")
 	err = env.runCommand(ctx, cmd)
@@ -146,7 +156,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	// specify module replacements before pinning versions
 	replaced := make(map[string]string)
 	for _, r := range b.Replacements {
-		log.Printf("[INFO] Replace %s => %s", r.Old.String(), r.New.String())
+		logger.Printf("[INFO] Replace %s => %s", r.Old.String(), r.New.String())
 		replaced[r.Old.String()] = r.New.String()
 	}
 	if len(replaced) > 0 {
@@ -176,7 +186,11 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	}
 
 	// pin versions by populating go.mod, first for Caddy itself and then plugins
-	log.Println("[INFO] Pinning versions")
+	err = out.beginStep(StepPinVersions)
+	if err != nil {
+		return nil, err
+	}
+	logger.Println("[INFO] Pinning versions")
 	err = env.execGoGet(ctx, caddyModulePath, env.caddyVersion, "", "")
 	if err != nil {
 		return nil, err
@@ -235,7 +249,7 @@ nextPlugin:
 		return nil, err
 	}
 
-	log.Println("[INFO] Build environment ready")
+	logger.Println("[INFO] Build environment ready")
 	return env, nil
 }
 
@@ -248,24 +262,33 @@ type environment struct {
 	skipCleanup     bool
 	buildFlags      string
 	modFlags        string
+	env             []string // nil = inherit the process environment
+	out             *buildOutput
+	logger          *log.Logger
 }
 
 // Close cleans up the build environment, including deleting
 // the temporary folder from the disk.
 func (env environment) Close() error {
 	if env.skipCleanup {
-		log.Printf("[INFO] Skipping cleanup as requested; leaving folder intact: %s", env.tempFolder)
+		env.logger.Printf("[INFO] Skipping cleanup as requested; leaving folder intact: %s", env.tempFolder)
 		return nil
 	}
-	log.Printf("[INFO] Cleaning up temporary folder: %s", env.tempFolder)
-	return os.RemoveAll(env.tempFolder)
+	// even if the OnStep callback errors, the temporary folder
+	// must still be removed, so that aborting can never leak it
+	stepErr := env.out.beginStep(StepCleanup)
+	env.logger.Printf("[INFO] Cleaning up temporary folder: %s", env.tempFolder)
+	return errors.Join(stepErr, os.RemoveAll(env.tempFolder))
 }
 
 func (env environment) newCommand(ctx context.Context, command string, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Dir = env.tempFolder
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if env.env != nil {
+		cmd.Env = env.env
+	}
+	cmd.Stdout = env.out.stdout()
+	cmd.Stderr = env.out.stderr()
 	return cmd
 }
 
@@ -278,7 +301,7 @@ func (env environment) newGoBuildCommand(ctx context.Context, goCommand string, 
 		return nil, fmt.Errorf("unsupported command of 'go': %s", goCommand)
 	}
 	cmd := env.newCommand(ctx, utils.GetGo(), goCommand)
-	cmd = parseAndAppendFlags(cmd, env.buildFlags)
+	cmd = env.parseAndAppendFlags(cmd, env.buildFlags)
 	cmd.Args = append(cmd.Args, args...)
 	return cmd, nil
 }
@@ -288,17 +311,17 @@ func (env environment) newGoBuildCommand(ctx context.Context, goCommand string, 
 func (env environment) newGoModCommand(ctx context.Context, args ...string) *exec.Cmd {
 	args = append([]string{"mod"}, args...)
 	cmd := env.newCommand(ctx, utils.GetGo(), args...)
-	return parseAndAppendFlags(cmd, env.modFlags)
+	return env.parseAndAppendFlags(cmd, env.modFlags)
 }
 
-func parseAndAppendFlags(cmd *exec.Cmd, flags string) *exec.Cmd {
+func (env environment) parseAndAppendFlags(cmd *exec.Cmd, flags string) *exec.Cmd {
 	if strings.TrimSpace(flags) == "" {
 		return cmd
 	}
 
 	fs, err := shlex.Split(flags)
 	if err != nil {
-		log.Printf("[ERROR] Splitting arguments failed: %s", flags)
+		env.logger.Printf("[ERROR] Splitting arguments failed: %s", flags)
 		return cmd
 	}
 	cmd.Args = append(cmd.Args, fs...)
@@ -313,7 +336,7 @@ func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd) error {
 	if ok {
 		timeout = time.Until(deadline)
 	}
-	log.Printf("[INFO] exec (timeout=%s): %+v ", timeout, cmd)
+	env.logger.Printf("[INFO] exec (timeout=%s): %+v ", timeout, cmd)
 
 	// start the command; if it fails to start, report error immediately
 	err := cmd.Start()

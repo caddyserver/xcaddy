@@ -10,12 +10,12 @@ import (
 	"strings"
 )
 
-// copy recursively copies src into dst with src's file modes.
-func copy(src, dst string) error {
+// copyDir recursively copies src into dst with src's file modes.
+func copyDir(logger *log.Logger, src, dst string) error {
 	src, _ = filepath.Abs(src)
 	src = filepath.ToSlash(src)
 	dst = filepath.ToSlash(dst)
-	log.Printf("[INFO] copying files: src=%s dest=%s", src, dst)
+	logger.Printf("[INFO] copying files: src=%s dest=%s", src, dst)
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return fmt.Errorf("failed to copy %s to %s: %w", src, dst, err)
