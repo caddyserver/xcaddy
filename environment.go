@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -279,6 +280,49 @@ func (env environment) Close() error {
 	stepErr := env.out.beginStep(StepCleanup)
 	env.logger.Printf("[INFO] Cleaning up temporary folder: %s", env.tempFolder)
 	return errors.Join(stepErr, os.RemoveAll(env.tempFolder))
+}
+
+// initVCS turns the temporary build folder into a minimal git repository
+// with a single commit. This is what lets the Go toolchain's default
+// -buildvcs=auto behavior stamp vcs.revision/vcs.time/vcs.modified build
+// settings into the resulting binary. Without a VCS working tree, Go emits
+// no vcs.* settings at all, which breaks plugins that derive their version
+// from debug.ReadBuildInfo() -- for example, Tailscale then reports its
+// version as "x.y.z-ERR-BuildInfo".
+//
+// This is best-effort: if git is missing or any step fails, we log a
+// warning and continue, leaving the build to proceed exactly as it did
+// before (just without VCS build info).
+func (env environment) initVCS(ctx context.Context) {
+	git, err := exec.LookPath("git")
+	if err != nil {
+		env.logger.Printf("[WARNING] git not found; building without VCS build info: %v", err)
+		return
+	}
+
+	run := func(args ...string) error {
+		cmd := env.newCommand(ctx, git, args...)
+		// keep git's own output out of the build log; failures are
+		// still reported via the returned error
+		cmd.Stdout = io.Discard
+		cmd.Stderr = io.Discard
+		return env.runCommand(ctx, cmd)
+	}
+
+	// A configured git identity isn't guaranteed (fresh CI images,
+	// containers), so supply one via -c so the commit can't fail with
+	// "empty ident name". It only labels this throwaway commit.
+	steps := [][]string{
+		{"init"},
+		{"add", "-A"},
+		{"-c", "user.name=xcaddy", "-c", "user.email=xcaddy@localhost", "commit", "-m", "xcaddy build"},
+	}
+	for _, step := range steps {
+		if err := run(step...); err != nil {
+			env.logger.Printf("[WARNING] preparing VCS build info failed at 'git %s'; building without it: %v", strings.Join(step, " "), err)
+			return
+		}
+	}
 }
 
 func (env environment) newCommand(ctx context.Context, command string, args ...string) *exec.Cmd {

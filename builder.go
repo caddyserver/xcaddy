@@ -473,6 +473,14 @@ func (b Builder) Build(ctx context.Context, outputFile string) (err error) {
 		return err
 	}
 
+	// Turn the temp module into a git repo with a single commit so the Go
+	// toolchain stamps VCS build info (vcs.revision/vcs.time) into the
+	// binary. Some plugins read this via debug.ReadBuildInfo(); without it
+	// e.g. Tailscale reports its version as "x.y.z-ERR-BuildInfo". Done
+	// after tidy so go.mod/go.sum are committed (vcs.modified=false), and
+	// best-effort so a missing git never fails an otherwise-valid build.
+	buildEnv.initVCS(ctx)
+
 	// compile
 	if err := out.beginStep(StepCompile); err != nil {
 		return err
