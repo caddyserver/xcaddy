@@ -552,12 +552,26 @@ func TestBuildHermeticEnv(t *testing.T) {
 	sentinel := errors.New("far enough")
 	outputs := make(map[Step]string)
 
+	homeDir := t.TempDir()
+	// Go's telemetry subsystem spawns a background process that writes to
+	// $HOME/.config/go/telemetry/ after go commands exit. That background
+	// process races with t.TempDir's RemoveAll cleanup and can leave the
+	// directory non-empty.  Pre-creating the mode file with "off" prevents
+	// the background process from starting entirely.
+	telemetryDir := filepath.Join(homeDir, ".config", "go", "telemetry")
+	if err := os.MkdirAll(telemetryDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(telemetryDir, "mode"), []byte("off\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
 	b := Builder{
 		Compile:   Compile{Platform: Platform{OS: "linux", Arch: "amd64"}},
 		SkipBuild: true,
 		Env: []string{
 			"PATH=" + os.Getenv("PATH"),
-			"HOME=" + t.TempDir(), // fresh HOME: no .netrc, no .gitconfig, no caches
+			"HOME=" + homeDir, // fresh HOME: no .netrc, no .gitconfig, no caches
 		},
 		OnStep: func(e *StepEvent) error {
 			data, err := io.ReadAll(e.Output)
