@@ -438,6 +438,7 @@ import (
 	"embed"
 	"io/fs"
 	"strings"
+	_ "time/tzdata"
 
 	"{{.CaddyModule}}"
 	"{{.CaddyModule}}/caddyconfig/caddyfile"
