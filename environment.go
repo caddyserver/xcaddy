@@ -415,6 +415,8 @@ type goModTemplateContext struct {
 const mainModuleTemplate = `package main
 
 import (
+	_ "time/tzdata"
+
 	caddycmd "{{.CaddyModule}}/cmd"
 
 	// plug in Caddy modules here
@@ -436,6 +438,7 @@ import (
 	"embed"
 	"io/fs"
 	"strings"
+	_ "time/tzdata"
 
 	"{{.CaddyModule}}"
 	"{{.CaddyModule}}/caddyconfig/caddyfile"
