@@ -190,16 +190,19 @@ The current working directory must be inside an initialized Go module.
 Syntax:
 
 ```
-$ xcaddy <args...>
+$ xcaddy [--] <args...>
 ```
+
 - `<args...>` are passed through to the `caddy` command. This is **not** the place for xcaddy build flags such as `--with`.
+- Use `--` before Caddy flags (such as `--config`) so that `xcaddy` does not try to parse them as its own flags. Without the separator, commands like `xcaddy run --config caddy.json` fail with `unknown flag: --config`.
+
 
 For example:
 
 ```bash
 $ xcaddy list-modules
 $ xcaddy run
-$ xcaddy run --config caddy.json
+$ xcaddy -- run --config caddy.json
 ```
 
 #### Building with your plugin plus other plugins

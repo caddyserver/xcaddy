@@ -18,6 +18,8 @@ var rootCmd = &cobra.Command{
 		"- Compile custom caddy binaries\n" +
 		"- A replacement for `go run` while developing Caddy plugins\n" +
 		"xcaddy accepts any Caddy command (except help and version) to pass through to the custom-built Caddy, notably `run` and `list-modules`.  The command pass-through allows for iterative development process.\n\n" +
+		"When passing flags through to Caddy (for example `--config`), put them after `--` so xcaddy does not parse them:\n" +
+		"  xcaddy -- run --config caddy.json\n\n" +
 		"Report bugs on https://github.com/caddyserver/xcaddy\n",
 	Short:        "Caddy module development helper",
 	SilenceUsage: true,
