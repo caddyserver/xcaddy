@@ -192,7 +192,7 @@ Syntax:
 ```
 $ xcaddy <args...>
 ```
-- `<args...>` are passed through to the `caddy` command.
+- `<args...>` are passed through to the `caddy` command. This is **not** the place for xcaddy build flags such as `--with`.
 
 For example:
 
@@ -201,6 +201,23 @@ $ xcaddy list-modules
 $ xcaddy run
 $ xcaddy run --config caddy.json
 ```
+
+#### Building with your plugin plus other plugins
+
+The development shortcut above only includes the module in the current directory. Flags like `--with` belong to `xcaddy build`. If you put them on a bare `xcaddy` / `xcaddy run` invocation, they are passed through to Caddy and fail with `unknown flag: --with`.
+
+To produce a binary that includes your local plugin **and** one or more other plugins, use `xcaddy build` with multiple `--with` flags. Point your own module at the current directory with `=.`:
+
+```bash
+# from inside your plugin's module directory
+$ xcaddy build \
+    --with github.com/me/my-plugin=. \
+    --with github.com/mholt/caddy-events-exec
+
+$ ./caddy run
+```
+
+You can add as many `--with` plugins as you need. After the build finishes, run the resulting binary (default `./caddy`) yourself — same as any other custom build.
 
 The race detector can be enabled by setting `XCADDY_RACE_DETECTOR=1`. The DWARF debug info can be enabled by setting `XCADDY_DEBUG=1`.
 
