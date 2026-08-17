@@ -180,10 +180,10 @@ Flags:
 			return err
 		}
 
-        var printVersion = os.Getenv("XCADDY_PRINT_VERSION") != "0"
+		var printVersion = os.Getenv("XCADDY_PRINT_VERSION") != "0"
 
 		// prove the build is working by printing the version
-        if printVersion && runtime.GOOS == utils.GetGOOS() && runtime.GOARCH == utils.GetGOARCH() {
+		if printVersion && runtime.GOOS == utils.GetGOOS() && runtime.GOARCH == utils.GetGOARCH() {
 			if !filepath.IsAbs(output) {
 				output = "." + string(filepath.Separator) + output
 			}
