@@ -23,6 +23,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -552,13 +553,24 @@ func TestBuildHermeticEnv(t *testing.T) {
 	sentinel := errors.New("far enough")
 	outputs := make(map[Step]string)
 
+	home := t.TempDir()
+
+	hermeticEnv := []string{
+		"PATH=" + os.Getenv("PATH"),
+		"HOME=" + home, // fresh HOME: no .netrc, no .gitconfig, no caches
+	}
+
+	// work around Go's flaky telemetry implementation that causes tests to fail
+	cmd := exec.Command("go", "telemetry", "off")
+	cmd.Env = hermeticEnv
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("disabling Go telemetry: %v\n%s", err, output)
+	}
+
 	b := Builder{
 		Compile:   Compile{Platform: Platform{OS: "linux", Arch: "amd64"}},
 		SkipBuild: true,
-		Env: []string{
-			"PATH=" + os.Getenv("PATH"),
-			"HOME=" + t.TempDir(), // fresh HOME: no .netrc, no .gitconfig, no caches
-		},
+		Env:       hermeticEnv,
 		OnStep: func(e *StepEvent) error {
 			data, err := io.ReadAll(e.Output)
 			if err != nil {
