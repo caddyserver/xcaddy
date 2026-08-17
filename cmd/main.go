@@ -33,6 +33,18 @@ import (
 	"github.com/caddyserver/xcaddy/internal/utils"
 )
 
+// CustomVersion is an optional string that overrides xcaddy's
+// reported version. It can be helpful when downstream packagers
+// need to manually set xcaddy's version, since building as the
+// main module causes debug.ReadBuildInfo() to report "(devel)".
+//
+// Set this variable during `go build` with `-ldflags`:
+//
+//	-ldflags '-X github.com/caddyserver/xcaddy/cmd.CustomVersion=v0.4.4'
+//
+// for example.
+var CustomVersion string
+
 var (
 	caddyVersion     = os.Getenv("CADDY_VERSION")
 	raceDetector     = os.Getenv("XCADDY_RACE_DETECTOR") == "1"
@@ -207,6 +219,9 @@ func splitWith(arg string) (module, version, replace string, err error) {
 
 // xcaddyVersion returns a detailed version string, if available.
 func xcaddyVersion() string {
+	if CustomVersion != "" {
+		return CustomVersion
+	}
 	mod := goModule()
 	ver := mod.Version
 	if mod.Sum != "" {
