@@ -70,14 +70,69 @@ jobs:
       run: pip install --upgrade cloudsmith-cli
 
     - name: Validate commits and tag signatures
+      id: verify
+      env:
+        SIGNING_KEYS: ${{ secrets.SIGNING_KEYS }}
       run: |
-        
-        # Import Matt Holt's key
-        curl 'https://github.com/mholt.gpg' | gpg --import
+        # ref: https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#example-usage-of-the-runner-context
+        allowed_signers="${{ runner.temp }}/allowed_signers"
+        : > "$allowed_signers"
+
+        # Convert newline-delimited SSH public keys from "type key email" to
+        # Git's allowed signers format: "email namespaces=git type key".
+        while IFS= read -r item; do
+          # Ignore blank lines, including lines containing only whitespace.
+          [[ -z "${item//[[:space:]]/}" ]] && continue
+
+          read -r key_type public_key email extra <<< "$item"
+          if [[ -z "$key_type" || -z "$public_key" || -z "$email" || -n "$extra" ]]; then
+            echo "Invalid SIGNING_KEYS entry: $item"
+            exit 1
+          fi
+
+          printf '%s namespaces="git" %s %s\n' "$email" "$key_type" "$public_key" >> "$allowed_signers"
+        done <<< "$SIGNING_KEYS"
+
+        git config set --global gpg.ssh.allowedSignersFile "$allowed_signers"
 
         echo "Verifying the tag: ${{ steps.vars.outputs.version_tag }}"
-        # tags are only accepted if signed by Matt's key
-        git verify-tag "${{ steps.vars.outputs.version_tag }}" || exit 1
+
+        # Verify the tag is signed
+        if ! git verify-tag -v "${{ steps.vars.outputs.version_tag }}" 2>&1; then
+          echo "❌ Tag verification failed!"
+          echo "passed=false" >> $GITHUB_OUTPUT
+          git push --delete origin "${{ steps.vars.outputs.version_tag }}"
+          exit 1
+        fi
+        # Run it again to capture the output
+        git verify-tag -v "${{ steps.vars.outputs.version_tag }}" 2>&1 | tee /tmp/verify-output.txt;
+
+        # SSH verification output typically includes the key fingerprint
+        # Use GNU grep with Perl regex for cleaner extraction (Linux environment)
+        KEY_SHA256=$(grep -oP "SHA256:[\"']?\K[A-Za-z0-9+/=]+(?=[\"']?)" /tmp/verify-output.txt | head -1 || echo "")
+
+        if [ -z "$KEY_SHA256" ]; then
+          # Try alternative pattern with "key" prefix
+          KEY_SHA256=$(grep -oP "key SHA256:[\"']?\K[A-Za-z0-9+/=]+(?=[\"']?)" /tmp/verify-output.txt | head -1 || echo "")
+        fi
+
+        if [ -z "$KEY_SHA256" ]; then
+          # Fallback: extract any base64-like string (40+ chars)
+          KEY_SHA256=$(grep -oP '[A-Za-z0-9+/]{40,}=?' /tmp/verify-output.txt | head -1 || echo "")
+        fi
+
+        if [ -z "$KEY_SHA256" ]; then
+          echo "Somehow could not extract SSH key fingerprint from git verify-tag output"
+          echo "Cancelling flow and deleting tag"
+          echo "passed=false" >> $GITHUB_OUTPUT
+          git push --delete origin "${{ steps.vars.outputs.version_tag }}"
+          exit 1
+        fi
+
+        echo "✅ Tag verification succeeded!"
+        echo "passed=true" >> $GITHUB_OUTPUT
+        echo "key_id=$KEY_SHA256" >> $GITHUB_OUTPUT
+
 
     - name: Cache the build cache
       uses: actions/cache@v6
