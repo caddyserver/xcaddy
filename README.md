@@ -85,142 +85,20 @@ $ xcaddy build [<caddy_version>]
 
 #### Examples
 
-```bash
-$ xcaddy build \
-    --with github.com/caddyserver/ntlm-transport
+See [docs/custom-builds.md](docs/custom-builds.md).
 
-$ xcaddy build v2.0.1 \
-    --with github.com/caddyserver/ntlm-transport@v0.1.1
-
-$ xcaddy build master \
-    --with github.com/caddyserver/ntlm-transport
-
-$ xcaddy build a58f240d3ecbb59285303746406cab50217f8d24 \
-    --with github.com/caddyserver/ntlm-transport
-
-$ xcaddy build \
-    --with github.com/caddyserver/ntlm-transport=../../my-fork
-
-$ xcaddy build \
-    --with github.com/caddyserver/ntlm-transport@v0.1.1=../../my-fork
-```
-
-You can even replace Caddy core using the `--with` flag:
-
-```
-$ xcaddy build \
-    --with github.com/caddyserver/caddy/v2=../../my-caddy-fork
-    
-$ xcaddy build \
-    --with github.com/caddyserver/caddy/v2=github.com/my-user/caddy/v2@some-branch
-```
-
-This allows you to hack on Caddy core (and optionally plug in extra modules at the same time!) with relative ease.
 
 ---
 
-If `--embed` is used without an alias prefix, the contents of the source directory are written directly into the root directory of the embedded filesystem within the Caddy executable. The contents of multiple unaliased source directories will be merged together:
+### Embedding files
 
-```
-$ xcaddy build --embed ./my-files --embed ./my-other-files
-$ cat Caddyfile
-{
-	# You must declare a custom filesystem using the `embedded` module.
-	# The first argument to `filesystem` is an arbitrary identifier
-	# that will also be passed to `fs` directives.
-	filesystem my_embeds embedded
-}
-
-localhost {
-	# This serves the files or directories that were
-	# contained inside of ./my-files and ./my-other-files
-	file_server {
-		fs my_embeds
-	}
-}
-```
-
-You may also prefix the source directory with a custom alias and colon separator to write the source directory's contents to a separate subdirectory within the `embedded` filesystem:
-
-```
-$ xcaddy build --embed foo:./sites/foo --embed bar:./sites/bar
-$ cat Caddyfile
-{
-	filesystem my_embeds embedded
-}
-
-foo.localhost {
-	# This serves the files or directories that were
-	# contained inside of ./sites/foo
-	root * /foo
-	file_server {
-		fs my_embeds
-	}
-}
-
-bar.localhost {
-	# This serves the files or directories that were
-	# contained inside of ./sites/bar
-	root * /bar
-	file_server {
-		fs my_embeds
-	}
-}
-```
-
-This allows you to serve 2 sites from 2 different embedded directories, which are referenced by aliases, from a single Caddy executable.
+See [docs/embedding-files.md](docs/embedding-files.md).
 
 ---
-
-If you need to work on Caddy's dependencies, you can use the `--replace` flag to replace it with a local copy of that dependency (or your fork on github etc if you need):
-
-```
-$ xcaddy build some-branch-on-caddy \
-    --replace golang.org/x/net=../net
-```
 
 ### For plugin development
 
-If you run `xcaddy` from within the folder of the Caddy plugin you're working on _without the `build` subcommand_, it will build Caddy with your current module and run it, as if you manually plugged it in and invoked `go run`.
-
-The binary will be built and run from the current directory, then cleaned up.
-
-The current working directory must be inside an initialized Go module.
-
-Syntax:
-
-```
-$ xcaddy [--] <args...>
-```
-
-- `<args...>` are passed through to the `caddy` command. This is **not** the place for xcaddy build flags such as `--with`.
-- Use `--` before Caddy flags (such as `--config`) so that `xcaddy` does not try to parse them as its own flags. Without the separator, commands like `xcaddy run --config caddy.json` fail with `unknown flag: --config`.
-
-
-For example:
-
-```bash
-$ xcaddy list-modules
-$ xcaddy run
-$ xcaddy -- run --config caddy.json
-```
-
-#### Building with your plugin plus other plugins
-
-The development shortcut above only includes the module in the current directory. Flags like `--with` belong to `xcaddy build`. If you put them on a bare `xcaddy` / `xcaddy run` invocation, they are passed through to Caddy and fail with `unknown flag: --with`.
-
-To produce a binary that includes your local plugin **and** one or more other plugins, use `xcaddy build` with multiple `--with` flags. Point your own module at the current directory with `=.`:
-
-```bash
-# from inside your plugin's module directory
-$ xcaddy build \
-    --with github.com/me/my-plugin=. \
-    --with github.com/mholt/caddy-events-exec
-
-$ ./caddy run
-```
-
-You can add as many `--with` plugins as you need. After the build finishes, run the resulting binary (default `./caddy`) yourself — same as any other custom build.
+See [docs/plugin-development.md](docs/plugin-development.md).
 
 The race detector can be enabled by setting `XCADDY_RACE_DETECTOR=1`. The DWARF debug info can be enabled by setting `XCADDY_DEBUG=1`.
 
@@ -234,21 +112,7 @@ $ xcaddy version
 
 ## Library usage
 
-```go
-builder := xcaddy.Builder{
-	CaddyVersion: "v2.0.0",
-	Plugins: []xcaddy.Dependency{
-		{
-			ModulePath: "github.com/caddyserver/ntlm-transport",
-			Version:    "v0.1.1",
-		},
-	},
-}
-err := builder.Build(context.Background(), "./caddy")
-```
-
-Versions can be anything compatible with `go get`.
-
+See [docs/library-usage.md](docs/library-usage.md).
 
 
 ## Environment variables
